@@ -27,3 +27,9 @@ David Grisham is willing to take the lead on writting the bitswap spec given tha
 Meanwhile, David will work on documenting his work with go-ipfs-bitswap and document the modifications he has done the codebase. The goal is so that we identify the primitives that Bitswap needs to expose in order to test different strategies.
 
 We are considering rescheduling the Bitswap research call to make it more friendly for UTC+0~3 habitants
+
+## Next steps
+
+- [ ] Continue testing go-ipfs Bitswap strategy implementation
+- [ ] Once Bitswap strategy impl is solid, add features to kubernetes-ipfs that are useful for Bitswap testing + metric gathering/aggregation
+- [ ] Start delving into Bitswap modules for Bitswap spec background, ask @diasdavid and @whyrusleeping questions

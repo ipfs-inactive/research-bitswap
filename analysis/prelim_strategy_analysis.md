@@ -5,43 +5,57 @@ author: David Grisham
 header-includes:
     - \usepackage{mathtools}
     - \DeclarePairedDelimiter\abs{\lvert}{\rvert}
+    - \newcommand{\Network}{\ensuremath{\mathcal{N}}}
     - \newcommand{\Nbhd}[1]{\mathcal{N}_{#1}}
 ...
 
-In this document, we analyze 3 strategies for a simple 2-player Bitswap
-infinitely repeated game.
+In this paper, we analyze 3 strategies for a simple 2-player Bitswap infinitely
+repeated game. We start by defining the system in the most general case, then do
+an analysis on a system subject to simplying constraints.
 
-**TODO**: finish this intro. Might want to mention the paragraph below, but have
-to be clear that the first section is more general than the specific case done
-in the analysis
+System
+======
 
-In a given round, a player's utility is dependent on the actions each of the
-players took in the previous round -- in other words, the debt ratio only
-considers the immediately preceding round, rather than all previous rounds.
+We have a network \Network of $\abs{\Network}$ users. The terms *users*, *peers*
+and *players* will be used somewhat interchangeably, depending on context. Each
+of the users has a neighborhood of peers, which is the set of users they are
+connected to. Each pair of peers plays an infinitely repeated Bitswap game. Each
+user's neighborhood is constant -- so any given pair of peers is connected for
+the entire repeated game. This means that the network topology is static as
+well.
+
+**TODO**: spacing after \Network\ within regular text is a bit too wide
 
 Actions and Utility Functions
-=============================
+-----------------------------
+
+**TODO**: check that all uses of $t$ from here down are consistent, did a lot of
+updates recently
+
+**TODO**: ensure lower bound for $t$ is always 0 (and not 1)
 
 A player has two possible actions: reciprocate ($R$) or defect ($D$). The
 utility function for player $i$ at time $t$ $u_i^t$:
 
 $$
-u_i^t = \sum_{j \in \Nbhd{i}} \delta_{a_j^{t}R} S_j(d_{ji}, \mathbf{d}_j^{-i}) B
+u_i^t = \sum_{j \in \Nbhd{i}} \delta_{a_j^{t}R}
+              S_j(d_{ji}^t, \mathbf{d}_j^{-i,t}) B
          - \delta_{a_i^t R} B \\
 $$
 
 where
 
--   $\Nbhd{i}$ is the neighborhood of user $i$ (i.e. the set of peers $i$ is
-    connected to)
+-   $\Nbhd{i} \subseteq \Network$ is the neighborhood of user $i$ (i.e. the set
+    of peers $i$ is connected to)
 -   $a_i^t \in \{R, D\}$ is the action user $i$ takes in round $t$
 -   $\delta{ij}$ is the kronecker delta function
 -   $d_{ji}^t$ is the reputation of user $i$ as viewed by peer $j$ (also
     referred to as the *debt ratio* from $i$ to $j$) in round $t$
--   $S_j(d_{ij}, \mathbf{d}_j^{-i}) \in \{0, 1\}$ is the *strategy function* of
-    user $j$. This function considers the relative reputation of peer $i$ to the
-    rest of $j$'s peers, and returns a weight for peer $i$. This weight is used
-    to determine what proportion of $j$'s bandwidth to give to peer $i$.
+-   $S_j(d_{ij}^t, \mathbf{d}_j^{-i,t}) \in \{0, 1\}$ is the *strategy function*
+    of user $j$. This function considers the relative reputation of peer $i$ to
+    the rest of $j$'s peers, and returns a weight for peer $i$. This weight is
+    used to determine what proportion of $j$'s bandwidth to allocate to peer $i$
+    in round $t$.
 -   $B > 0$ is the (constant) amount of bandwidth that a user has to offer in a
     given round. We make the simplifying assumption that the users are
     homogeneous in this value, so they all have the same amount of bandwidth to
@@ -73,35 +87,36 @@ $$
 where $b_{ij}^{t-1}$ is the total number of bits sent from $i$ to $j$ from round
 $0$ through round $t-1$ (so, all rounds prior to round $t$).
 
-We can define $b_{ij}^{t+1}$ in terms of $b_{ij}^{t}$ and $\delta_{a_i^t R}$ as
+We can define $b_{ij}^t$ in terms of $b_{ij}^{t}$ and $\delta_{a_i^t R}$ as
 follows:
 
-
 $$
-b_{ij}^{t+1} = b_{ij}^t + \delta_{a_i^t R} S_i(d_{ij}, \mathbf{d}_i^{-j}) B
+b_{ij}^t = b_{ij}^{t-1} +
+           \delta_{a_i^{t-1} R} S_i(d_{ij}^t, \mathbf{d}_i^{-j,t}) B
 $$
 
 So, the total number of bits sent from $i$ to $j$ increases by
-$S_i(d_{ij}, \mathbf{d}_i^{-j}) B$ (the proportion of $i$'s total bandwidth that
-$i$ allocates to $j$) if and only if peer $i$ reciprocated in round $t$ (i.e.,
-$a_i^t = R \implies \delta_{a_i^t R} = 1$).
+$S_i(d_{ij}^t, \mathbf{d}_i^{-j,t}) B$ (the proportion of $i$'s total bandwidth
+that $i$ allocates to $j$) if and only if peer $i$ reciprocated in round $t-1$
+(i.e., $a_i^{t-1} = R \implies \delta_{a_i^{t-1} R} = 1$).
 
 Now we can write $d_{ij}^{t+1}$ in terms of values from round $t$.
 
 $$
 d_{ij}^{t+1} = \frac{b_{ij}^{t}
-                  + \delta_{a_i^t R} S_i(d_{ij}, \mathbf{d}_i^{-j}) B}
-               {b_{ji}^t + \delta_{a_j^t R} S_j(d_{ji}, \mathbf{d}_j^{-i}) B + 1}
+                  + \delta_{a_i^t R} S_i(d_{ij}^t, \mathbf{d}_i^{-j,t}) B}
+               {b_{ji}^t + \delta_{a_j^t R} S_j(d_{ji}^t, \mathbf{d}_j^{-i,t}) B + 1}
 $$
 
 Analysis
 ========
 
-The strategy function that user $j$ will use to weight some peer $i$ is:
+We now consider consider a specific strategy function that user $j$ uses to
+weight some peer $i$:
 
 $$
-S_j(d_{ji}, \mathbf{d}_j^{-i}) = \frac{d_{ji}}
-    {\sum_{k \in \Nbhd{j}} d_{jk}}
+S_j(d_{ji}^t, \mathbf{d}_j^{-i,t}) = \frac{d_{ji}^t}
+    {\sum_{k \in \Nbhd{j}} d_{jk}^t}
 $$
 
 
@@ -124,12 +139,17 @@ where
 -   $\epsilon_i \in (0, 1)$ is the *discount factor*, which characterizes how
     much player $i$ cares about their payoffs in future rounds relative to the
     current round.
--   $\mathbf{a}^t$ is the vector containing each player's actions in round $t$.
-    (**TODO**: define $\mathbf{a}^t$ with some sort of vector-comprehension
-    notation, or just $(a_1^t, a_2^t, ...)$)
+-   $\mathbf{a}^t = (a_i^t \mid \forall i \in (1, \abs{\Network}))$ is the
+    vector containing each player's actions in round $t$. **TODO**: better to
+    use $i$ to mean 'peer' rather than 'index of peer'?
 
-**TODO**: Mention that $d_{ij}^t$ only considers previous round (and ensure
-explanation is consistent with analysis below)
+Further, rather than $d_{ij}^t$ being an aggregate value over all rounds in
+$[0, t)$, it will only take the immediately preceding round into account. In
+other words:
+
+$$
+b_{ij}^t = \delta_{a_i^t R} S_i(d_{ij}^t, \mathbf{d}_i^{-j,t}) B
+$$
 
 We now consider 3 strategies: tit-for-tat, pavlov, and grim-trigger. For each of
 these, we'll determine whether the strategy is an subgame-perfect Nash
@@ -157,6 +177,9 @@ To determine whether TFT is an SPNE for the 2-player infinitely repeated
     ($U_2$) for all initial pairs of actions, then TFT is an SPNE.
     Mathematically, TFT is an SPNE if and only if $U_2' \leq U_2$ for all
     possible initial actions.
+
+Note that since each user only has a single peer (the other user), when a player
+plays $R$ they allocate all of their bandwidth to the other user.
 
 Let's look at the case where the initial pair of actions is $(D, D)$.
 
@@ -251,7 +274,7 @@ When player 2 does deviate from TFT:
 $a_1^t$   D   R   R   R   R  ...
 $a_2^t$   R   R   R   R   R  ...
 
-Both players give and receive $B$ bandwidth in all rounds $t \in [1, \infty)$,
+Both players give and receive $B$ bandwidth in all rounds $t \in [0, \infty)$,
 so:
 
 \begin{align*}

@@ -9,22 +9,54 @@ header-includes:
     - \newcommand{\Nbhd}[1]{\mathcal{N}_{#1}}
 ...
 
+**TODO**: Ensure periods at the end of all bullet points/lists are consistent
+
+**TODO**: Figure out cleaner (more maintainable) solution to math mode spacing
+
+---
+
 In this paper, we analyze 3 strategies for a simple 2-player Bitswap infinitely
 repeated game. We start by defining the system in the most general case, then do
-an analysis on a system subject to simplying constraints.
+an analysis on a system subject to simplifying constraints.
+
+Bitswap is the data exchange protocol for the InterPlanetary File System (IPFS).
+Our model is meant to reflect this use case of Bitswap as the decision engine
+implemented by each user in a peer-to-peer distributed file system. In this
+distributed file system of many users, each user is connect to a set of peers
+that they trade data with. Every peer has a reputation with every other peer --
+in other words, for every peer a user has, that user maintains a summary of
+their interactions with that peer. Then, when deciding how to allocate their
+resources among their peers at a given time, the user uses these aggregate
+reputations to provide weights to each of their peers. For example, consider a
+network of 3 peers, labeled $1$, $2$, and $3$. If peer $2$ sends twice as much
+data to peer $1$ as peer $3$ sends to peer $1$ from time $0$ to $t-1$ (and peer
+$1$ sends the same amount of data to both $2$ and $3$ over that time), then peer
+$1$ might allocate $\frac{2}{3}$ of its bandwidth to peer $2$ and $\frac{1}{3}$
+to peer $3$ at time $t$.
+
+**TODO**: necessary to explicitly mention strategies here? trying to stay
+informal, but might still be a good idea
 
 System
 ======
 
-We have a network \Network of $\abs{\Network}$ users. The terms *users*, *peers*
-and *players* will be used somewhat interchangeably, depending on context. Each
-of the users has a neighborhood of peers, which is the set of users they are
-connected to. Each pair of peers plays an infinitely repeated Bitswap game. Each
-user's neighborhood is constant -- so any given pair of peers is connected for
-the entire repeated game. This means that the network topology is static as
-well.
+**NOTE**: The static topology constraint isn't strictly necessary until the
+**Analysis** section, so I moved it there.
 
-**TODO**: spacing after \Network\ within regular text is a bit too wide
+We have a network \Network of $\abs{\Network}$ users. The terms *users* and
+*players* will be used somewhat interchangeably, depending on context; the term
+*peers* is used similarly, but primarily refers to users who are connected (and
+thus participate as players in the same Bitswap game). Each of the users has a
+neighborhood of peers, which is the set of users they are connected to. Each
+pair of peers plays an infinitely repeated Bitswap game. The resource that users
+have to offer to their peers is bandwidth. We make the following simplifying
+assumptions about user's bandwidth:
+
+1.  All users have the same amount of bandwidth to offer.
+2.  A single user has the same amount of bandwidth to offer at each time step.
+
+In other words, bandwidth is constant both in peer-space and in time. **TODO**:
+worth saying it this way, or is 'peer-space' confusing?
 
 Actions and Utility Functions
 -----------------------------
@@ -32,15 +64,15 @@ Actions and Utility Functions
 **TODO**: check that all uses of $t$ from here down are consistent, did a lot of
 updates recently
 
-**TODO**: ensure lower bound for $t$ is always 0 (and not 1)
+**TODO**: ensure lower bound for $t$ is consistently 0 (and not typo'd as 1)
 
 A player has two possible actions: reciprocate ($R$) or defect ($D$). The
 utility function for player $i$ at time $t$ $u_i^t$:
 
 $$
-u_i^t = \sum_{j \in \Nbhd{i}} \delta_{a_j^{t}R}
-              S_j(d_{ji}^t, \mathbf{d}_j^{-i,t}) B
-         - \delta_{a_i^t R} B \\
+u_i^t = \sum_{j \in \Nbhd{i}} \delta_{a_j^{t}R}\ 
+              S_j(d_{ji}^t\,,\,\mathbf{d}_j^{-i,t})\ B
+         \:-\:\delta_{a_i^t R}\ B \\
 $$
 
 where
@@ -51,15 +83,16 @@ where
 -   $\delta{ij}$ is the kronecker delta function
 -   $d_{ji}^t$ is the reputation of user $i$ as viewed by peer $j$ (also
     referred to as the *debt ratio* from $i$ to $j$) in round $t$
+-   $\mathbf{d}_j^{-i,t} = (d_{jk}^t \mid \forall k \in \Nbhd{j}, k \neq i)$ is
+    the vector of debt ratios for all of user $j$'s peers (as viewed by peer
+    $j$) in round $t$, *excluding* peer $i$
 -   $S_j(d_{ij}^t, \mathbf{d}_j^{-i,t}) \in \{0, 1\}$ is the *strategy function*
     of user $j$. This function considers the relative reputation of peer $i$ to
     the rest of $j$'s peers, and returns a weight for peer $i$. This weight is
     used to determine what proportion of $j$'s bandwidth to allocate to peer $i$
     in round $t$.
 -   $B > 0$ is the (constant) amount of bandwidth that a user has to offer in a
-    given round. We make the simplifying assumption that the users are
-    homogeneous in this value, so they all have the same amount of bandwidth to
-    offer.
+    given round
 
 The terms *strategy* and *strategy function* are defined as:
 
@@ -81,7 +114,7 @@ We can write the debt ratio $d_{ij}$ in terms of the number of bits exchanged
 between peers $i$ and $j$:
 
 $$
-d_{ji}^t = \frac{b_{ji}^{t-1}}{b_{ij}^{t-1} + 1}
+d_{ji}^t = \frac{b_{ji}^{t-1}}{b_{ij}^{t-1}\:+\:1}
 $$
 
 where $b_{ij}^{t-1}$ is the total number of bits sent from $i$ to $j$ from round
@@ -91,8 +124,8 @@ We can define $b_{ij}^t$ in terms of $b_{ij}^{t}$ and $\delta_{a_i^t R}$ as
 follows:
 
 $$
-b_{ij}^t = b_{ij}^{t-1} +
-           \delta_{a_i^{t-1} R} S_i(d_{ij}^t, \mathbf{d}_i^{-j,t}) B
+b_{ij}^t = b_{ij}^{t-1}\:+\:
+           \delta_{a_i^{t-1} R}\ S_i(d_{ij}^t\,,\,\mathbf{d}_i^{-j,t})\ B
 $$
 
 So, the total number of bits sent from $i$ to $j$ increases by
@@ -103,35 +136,43 @@ that $i$ allocates to $j$) if and only if peer $i$ reciprocated in round $t-1$
 Now we can write $d_{ij}^{t+1}$ in terms of values from round $t$.
 
 $$
-d_{ij}^{t+1} = \frac{b_{ij}^{t}
-                  + \delta_{a_i^t R} S_i(d_{ij}^t, \mathbf{d}_i^{-j,t}) B}
-               {b_{ji}^t + \delta_{a_j^t R} S_j(d_{ji}^t, \mathbf{d}_j^{-i,t}) B + 1}
+d_{ij}^{t+1} = \frac{b_{ij}^{t}\:+\:
+                  \delta_{a_i^t R}\ S_i(d_{ij}^t\,,\,\mathbf{d}_i^{-j,t})\ B}
+               {b_{ji}^t\:+\:\delta_{a_j^t R}\ S_j(d_{ji}^t\,,\,\mathbf{d}_j^{-i,t})
+                 \ B\:+\:1}
 $$
 
 Analysis
 ========
 
+**TODO**: integrate this list with the rest of this section
+
+1.  All users always have unique data that all of their peers want.
+2.  Each user's neighborhood is constant -- so any given pair of peers is
+    connected for the entire repeated game. This means that the network topology
+    is static as well.
+
 We now consider consider a specific strategy function that user $j$ uses to
 weight some peer $i$:
 
 $$
-S_j(d_{ji}^t, \mathbf{d}_j^{-i,t}) = \frac{d_{ji}^t}
+S_j(d_{ji}^t\,,\,\mathbf{d}_j^{-i,t}) = \frac{d_{ji}^t}
     {\sum_{k \in \Nbhd{j}} d_{jk}^t}
 $$
 
 
 
 $$
-u_i^t = \sum_{j \in \Nbhd{i}} \frac{\delta_{a_j^{t}R} d_{ji}^t}
-             {\sum_{k \in \Nbhd{j}} d_{jk}^t} B
-         - \delta_{a_i^t R} B \\
+u_i^t = \sum_{j \in \Nbhd{i}} \frac{\delta_{a_j^{t}R}\ d_{ji}^t}
+           {\sum_{k \in \Nbhd{j}} d_{jk}^t}\ B
+        \:-\:\delta_{a_i^t R}\ B \\
 $$
 
 As this is an infinitely repeated game, we want to be able to calculate the
 discounted average payoff of player $i$, $U_i$.
 
 $$
-U_i = (1 - \epsilon_i) \sum_{t=1}^{\infty} \epsilon_i^{t-1} u_i^t(\mathbf{a}^t)
+U_i = (1 - \epsilon_i) \sum_{t=1}^{\infty} \epsilon_i^{t-1}\ u_i^t(\mathbf{a}^t)
 $$
 
 where
@@ -140,15 +181,14 @@ where
     much player $i$ cares about their payoffs in future rounds relative to the
     current round.
 -   $\mathbf{a}^t = (a_i^t \mid \forall i \in (1, \abs{\Network}))$ is the
-    vector containing each player's actions in round $t$. **TODO**: better to
-    use $i$ to mean 'peer' rather than 'index of peer'?
+    vector of each player's actions in round $t$.
 
 Further, rather than $d_{ij}^t$ being an aggregate value over all rounds in
 $[0, t)$, it will only take the immediately preceding round into account. In
 other words:
 
 $$
-b_{ij}^t = \delta_{a_i^t R} S_i(d_{ij}^t, \mathbf{d}_i^{-j,t}) B
+b_{ij}^t = \delta_{a_i^t R}\ S_i(d_{ij}^t\,,\,\mathbf{d}_i^{-j,t})\ B
 $$
 
 We now consider 3 strategies: tit-for-tat, pavlov, and grim-trigger. For each of
@@ -158,7 +198,7 @@ equilibrium (SPNE) for the 2-player infinitely repeated game.
 Tit-for-Tat
 -----------
 
-We start by analyzing the well-studed tit-for-tat (TFT) strategy. A peer that
+We start by analyzing the well-studied tit-for-tat (TFT) strategy. A peer that
 uses this strategy always takes the strategy that their peer took in the
 previous round. So, if player 1 plays action $R$ ($D$) in round $t$, then player
 2 will play action $R$ in round $t+1$ ($D$), and vice-versa.
@@ -202,7 +242,7 @@ We can calculate the payoff of player 2 in this case -- notice that, since
 neither player is ever giving or receiving, they payoff at each round is $0$.
 
 $$
-u_2^t = 0\ \forall\ t \implies U_2 = 0
+u_2^t = 0\ \forall\ t\ \implies\ U_2 = 0
 $$
 
 Now we consider this case where player 2 deviates from TFT for 1 round, at

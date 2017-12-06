@@ -40,9 +40,6 @@ informal, but might still be a good idea
 System
 ======
 
-**NOTE**: The static topology constraint isn't strictly necessary until the
-**Analysis** section, so I moved it there.
-
 We have a network \Network of $\abs{\Network}$ users. The terms *users* and
 *players* will be used somewhat interchangeably, depending on context; the term
 *peers* is used similarly, but primarily refers to users who are connected (and
@@ -56,13 +53,16 @@ assumptions about user's bandwidth:
 2.  A single user has the same amount of bandwidth to offer at each time step.
 
 In other words, bandwidth is constant both in peer-space and in time. **TODO**:
-worth saying it this way, or is 'peer-space' confusing?
+worth saying it this way, or is 'peer-space' confusing? 
+
+We also make the assumption that *all users always have unique data that all of
+their peers want*. So, whenever a peer plays $R$, they'll always have some data
+to send to all of their peers. This, of course, contrasts a more realistic
+scenario where a peer chooses to reciprocate but simply does not have anything
+that their peers want at the current time.
 
 Actions and Utility Functions
 -----------------------------
-
-**TODO**: check that all uses of $t$ from here down are consistent, did a lot of
-updates recently
 
 **TODO**: ensure lower bound for $t$ is consistently 0 (and not typo'd as 1)
 
@@ -145,12 +145,9 @@ $$
 Analysis
 ========
 
-**TODO**: integrate this list with the rest of this section
-
-1.  All users always have unique data that all of their peers want.
-2.  Each user's neighborhood is constant -- so any given pair of peers is
-    connected for the entire repeated game. This means that the network topology
-    is static as well.
+For the purposes of this analysis, we make an additional assumption: each user's
+neighborhood is constant -- so any given pair of peers is connected for the
+entire repeated game. This means that the network topology is static as well.
 
 We now consider consider a specific strategy function that user $j$ uses to
 weight some peer $i$:
@@ -193,37 +190,43 @@ $$
 
 We now consider 3 strategies: tit-for-tat, pavlov, and grim-trigger. For each of
 these, we'll determine whether the strategy is an subgame-perfect Nash
-equilibrium (SPNE) for the 2-player infinitely repeated game.
+equilibrium (SPNE) for the 2-player infinitely repeated game. While it suffices
+to show a single case of initial conditions that prove a strategy is not an
+SPNE, all cases will be shown as they may prove useful in understanding the more
+complex scenarios. (**TODO**: get others' opinions on whether wording in first
+half of previous sentence is clear) (**TODO**: be sure to follow up on second
+half of previous sentence later in analysis)
+
+Note that since each user only has a single peer (the other user), when a player
+plays $R$ they allocate all of their bandwidth to the other user. (**TODO**:
+find best place for this statement)
+
+To determine whether a given strategy is an SPNE for the 2-player infinitely
+repeated (simplified) Bitswap game, we will do the following:
+
+-   Consider an initial pair of actions at $t=0$, $(a_1^0, a_2^0)$.
+-   Assume player 1 plays the strategy for all rounds.
+-   Consider two cases:
+    1.  Player 2 never deviates from the strategy.
+    2.  Player 2 deviates from the strategy for a single round, at $t=1$, then
+        plays the strategy in all future rounds.
+-   Calculate player 2's payoff for the infinitely-repeated game in both cases.
+    If player 2's payoff in case 2 ($U_2'$) is less than or equal to their
+    payoff in case 1 ($U_2$) for all initial pairs of actions, then the strategy
+    is an SPNE. Mathematically, a strategy is an SPNE if and only if
+    $U_2' \leq U_2$ for all possible initial actions.
 
 Tit-for-Tat
 -----------
 
-We start by analyzing the well-studied tit-for-tat (TFT) strategy. A peer that
+We start by analyzing the well-studied tit-for-tat (TFT) strategy. A player that
 uses this strategy always takes the strategy that their peer took in the
 previous round. So, if player 1 plays action $R$ ($D$) in round $t$, then player
 2 will play action $R$ in round $t+1$ ($D$), and vice-versa.
 
-To determine whether TFT is an SPNE for the 2-player infinitely repeated
-(simplified) Bitswap game, we will do the following:
+Let's first consider case where the initial pair of actions is $(D, D)$.
 
--   Consider an initial pair of actions at $t=0$, $(a_1^0, a_2^0)$.
--   Assume player 1 plays TFT for all rounds.
--   Consider two cases:
-    1.  Player 2 never deviates from TFT.
-    2.  Player 2 deviates from TFT for a single round, at $t=1$, then plays TFT
-        for all future rounds.
--   Compare player 2's payoff for the infinitely-repeated game. If player 2's
-    payoff in case 2 ($U_2'$) is less than or equal to their payoff in case 1
-    ($U_2$) for all initial pairs of actions, then TFT is an SPNE.
-    Mathematically, TFT is an SPNE if and only if $U_2' \leq U_2$ for all
-    possible initial actions.
-
-Note that since each user only has a single peer (the other user), when a player
-plays $R$ they allocate all of their bandwidth to the other user.
-
-Let's look at the case where the initial pair of actions is $(D, D)$.
-
-### $(D, D)$ at $t=0$
+### Case 1: $(D, D)$
 
 Here, both players start by playing the $D$ strategy. We'll first consider the
 case where player 2 does not deviate from TFT. The strategies at each round then
@@ -290,8 +293,7 @@ well.
 For the rest of the cases, we simply show the action sequences and the
 discounted average payoff results
 
-$(D, R)$
---------
+### Case 2: $(D, R)$
 
 When player 2 doesn't deviate from TFT:
 
@@ -324,8 +326,7 @@ U_2' &= 0 - \epsilon_2 0 + \epsilon_2^2 0 - \ldots \\
 
 Thus, $U_2' < U_2$ in this case.
 
-$(R, D)$
---------
+### Case 3: $(R, D)$
 
 When player 2 doesn't deviate from TFT:
 
@@ -356,11 +357,10 @@ U_2' &= 0 - \epsilon_2 0 + \epsilon_2^2 0 - \ldots \\
 We get a differently result in this case, namely $U_2' > U_2$. Therefore, **TFT
 is not an SPNE for this game**.
 
-$(R, R)$
---------
+### Case 4: $(R, R)$
 
-Even though we've already proven that TFT is not an SPNE, we present the
-analysis of the final case for completeness.
+We now already proven that TFT is not an SPNE. This case gives that result as
+well.
 
 When player 2 doesn't deviate from TFT:
 
@@ -394,12 +394,162 @@ SPNE.
 Grim-Trigger
 ------------
 
-**TODO**
+Now we consider the well-studied grim trigger (GT) strategy. A player that uses
+this strategy plays $D$ in all rounds where their peer has previously played
+$D$; otherwise, the player plays $R$. Formally, for the 2-player game, this
+strategy is characterized by
+
+$$
+a_i^t =
+  \begin{cases}
+    D & \text{if } D \in (a_j^0, \ldots, a_j^{t-1}) \\
+    R & \text{otherwise} 
+  \end{cases}
+$$
+
+where $i, j \in \{1, 2\}$ and $i \neq j$.
+
+### Case 1: $(D, D)$
+
+In this first case, both players play $D$ in round $t=0$. As both users are
+playing GT, each user defects for all succeeding rounds since their peer played
+$D$ at some point in the past. Thus, the resulting strategy sequence is:
+
+  $t$    $0$ $1$ $2$ $3$ $4$ ...
+-------  --- --- --- --- --- ---
+$a_1^t$   D   D   D   D   D  ...
+$a_2^t$   D   D   D   D   D  ...
+
+Thus,
+
+$$
+U_2 = 0
+$$
+
+When player 2 deviates from GT:
+
+  $t$    $0$ $1$ $2$ $3$ $4$ ...
+-------  --- --- --- --- --- ---
+$a_1^t$   D   D   D   D   D  ...
+$a_2^t$   D   R   D   D   D  ...
+
+In this case, player 1's strategy is still $D$ for all rounds, since 2 played
+$D$ at $t=0$. So player 2 ends up giving up $B$ bandwidth at $t=1$ and never
+getting anything back, giving:
+
+$$
+U_2' = -B
+$$
+
+Thus, $U_2' > U_2$ in this case. Therefore, **GT is not an SPNE for this game**.
+
+### Case 2: $(D, R)$
+
+When player 2 does not deviate from GT:
+
+  $t$    $0$ $1$ $2$ $3$ $4$ ...
+-------  --- --- --- --- --- ---
+$a_1^t$   D   R   D   D   D  ...
+$a_2^t$   R   D   D   D   D  ...
+
+Thus,
+
+$$
+U_2 = B
+$$
+
+When player 2 deviates from GT:
+
+  $t$    $0$ $1$ $2$ $3$ $4$ ...
+-------  --- --- --- --- --- ---
+$a_1^t$   D   R   R   D   D  ...
+$a_2^t$   R   R   D   D   D  ...
+
+Thus,
+
+\begin{align*}
+U_2' &= B - B + \epsilon_2 B \\
+     &= \epsilon_2 B
+\end{align*}
+
+In this case, $U_2' < U_2$.
+
+### Case 3: $(R, D)$
+
+When player 2 does not deviate from GT:
+
+  $t$    $0$ $1$ $2$ $3$ $4$ ...
+-------  --- --- --- --- --- ---
+$a_1^t$   R   D   D   D   D  ...
+$a_2^t$   D   R   D   D   D  ...
+
+Thus,
+
+$$
+U_2 = -B
+$$
+
+When player 2 deviates from GT:
+
+  $t$    $0$ $1$ $2$ $3$ $4$ ...
+-------  --- --- --- --- --- ---
+$a_1^t$   R   D   D   D   D  ...
+$a_2^t$   D   D   D   D   D  ...
+
+Thus,
+
+$$
+U_2' = 0
+$$
+
+In this case, $U_2' < U_2$.
+
+### Case 4: $(R, R)$
+
+When player 2 does not deviate from GT:
+
+  $t$    $0$ $1$ $2$ $3$ $4$ ...
+-------  --- --- --- --- --- ---
+$a_1^t$   R   R   R   R   R  ...
+$a_2^t$   R   R   R   R   R  ...
+
+Thus,
+
+$$
+U_2 = 0
+$$
+
+When player 2 deviates from GT:
+
+  $t$    $0$ $1$ $2$ $3$ $4$ ...
+-------  --- --- --- --- --- ---
+$a_1^t$   R   R   D   D   D  ...
+$a_2^t$   R   D   R   D   D  ...
+
+Thus,
+
+\begin{align*}
+U_2' &= B - \epsilon_2 B \\
+     &= (1 - \epsilon_2) B
+\end{align*}
+
+In this case, $U_2' > U_2$, which would be proof that GT is not an SPNE for this
+game had we not already proven that fact.
 
 Pavlov
 ------
 
-**TODO**
+### Case 1: $(D, D)$
+
+
+### Case 2: $(D, R)$
+
+
+### Case 3: $(R, D)$
+
+
+### Case 4: $(R, R)$
+
 
 Discussion
 ----------

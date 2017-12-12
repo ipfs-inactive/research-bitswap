@@ -317,7 +317,7 @@ loop in this state.) Otherwise, it return `true`.
 ```go
 func (tl *strategy_prq) checkTaskVsAllocation(rrp *RRPeer, task *peerRequestTask) bool {
 	// check whether |task| exceeds peer's round-robin allocation
-	if rrp.exceedsAllocation(task.Entry.Size) {
+	if task.Entry.Size > rrp.allocation {
 		tl.partners[rrp.id].taskQueue.Push(task)
 		tl.rrq.pop()
 		return false

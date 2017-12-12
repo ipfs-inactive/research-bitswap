@@ -36,6 +36,13 @@ type RRPeer struct {
 	allocation int
 	served     int
 }
+
+func newRRPeer(p peer.ID) *RRPeer {
+	return &RRPeer{
+		id:     p,
+		served: 0,
+	}
+}
 ```
 
 An `RRQueue` represents a round-robin queue and is made up of the following
@@ -91,7 +98,26 @@ func newRRQueueCustom(pb, rb int, s Strategy) *RRQueue {
 }
 ```
 
-**TODO**: continue from here
+`rrq.updateWeight(id, receipt)` updates `id`'s weight with the value calculated
+by the `strategy` function, using `receipt` as the input. This function also
+updates `totalWeight` to reflect the newly updated `weights`.
+
+```go
+func (rrq *RRQueue) updateWeight(id peer.ID, r *Receipt) {
+	// get old weight
+	old_weight, ok := rrq.weights[id]
+	if !ok {
+		old_weight = 0
+	}
+	// update peer's weight based on strategy func
+	rrq.weights[id] = rrq.strategy.weightFunction(r)
+	// add delta to totalWeight
+	rrq.totalWeight += rrq.weights[id] - old_weight
+}
+```
+
+`rrq.addPeer(id, weight)` creates an `RRPeer` corresponding to the peer with ID
+`id` and adds it to the queue. The `weight` should be calculated by the `rrq`
 
 ```go
 func (rrq *RRQueue) addPeer(id peer.ID, weight float64) {
@@ -106,24 +132,62 @@ func (rrq *RRQueue) addPeer(id peer.ID, weight float64) {
 	}
 	rrq.allocations = append(rrq.allocations, rrp)
 }
+```
 
-func (rrq *RRQueue) updateWeight(id peer.ID, r *Receipt) {
-	// get old weight
-	old_weight, ok := rrq.weights[id]
-	if !ok {
-		old_weight = 0
-	}
-	// update peer's weight based on strategy func
-	rrq.weights[id] = rrq.strategy.weightFunction(r)
-	// add delta to totalWeight
-	rrq.totalWeight += rrq.weights[id] - old_weight
+`rrq.pop()` removes the peer at the front of the queue and does not return that
+peer, while `rrq.head()` returns the peer at the front of the queue (if the
+queue is not empty) but does not remove the peer from the queue.
+
+```go
+func (rrq *RRQueue) pop() {
+	// TODO: bounds check
+	rrq.allocations = rrq.allocations[1:]
 }
 
+func (rrq *RRQueue) head() *RRPeer {
+	if len(rrq.allocations) == 0 {
+		return nil
+	}
+	return rrq.allocations[0]
+}
+```
+
+`rrq.shift()` moves the peer at the front of the queue to the end.
+
+```go
+func (rrq *RRQueue) shift() {
+	var peer *RRPeer
+	peer, rrq.allocations = rrq.allocations[0], rrq.allocations[1:]
+	rrq.allocations = append(rrq.allocations, peer)
+}
+```
+
+`rrq.resetAllocations()` resets the `allocations` to an empty list. This should
+be used before initializing a new round.
+
+```go
 func (rrq *RRQueue) resetAllocations() {
 	rrq.allocations = []*RRPeer{}
 }
+```
 
-func (rrq *RRQueue) freeze(id peer.ID) {
+`rrq.numPeers()` returns the number of peers who have allocations in the
+currently active round.
+
+```go
+func (rrq *RRQueue) numPeers() int {
+	return len(rrq.allocations)
+}
+```
+
+Freezing/Thawing
+----------------
+
+Currently not implemented. Should probably be implemented differently than in
+the commented code below.
+
+```go
+/*func (rrq *RRQueue) freeze(id peer.ID) {
 	rrq.weights[id] *= rrq.strategy.freezeWeight
 }
 
@@ -136,46 +200,5 @@ func (rrq *RRQueue) fullThaw(id peer.ID, freezeVal int) {
 	// TODO: may want more reversible way of resetting weight...maybe store original weights?
 	rrq.weights[id] /=
 		math.Pow(rrq.strategy.freezeWeight, float64(freezeVal))
-}
-
-func (rrq *RRQueue) numPeers() int {
-	return len(rrq.allocations)
-}
-
-func (rrq *RRQueue) set(id peer.ID, allocation int) {
-	for _, peer := range rrq.allocations {
-		if peer.id == id {
-			peer.allocation = allocation
-		}
-	}
-}
-
-func (rrq *RRQueue) shift() {
-	var peer *RRPeer
-	peer, rrq.allocations = rrq.allocations[0], rrq.allocations[1:]
-	rrq.allocations = append(rrq.allocations, peer)
-}
-
-func (rrq *RRQueue) pop() {
-	// TODO: bounds check
-	rrq.allocations = rrq.allocations[1:]
-}
-
-func (rrq *RRQueue) head() *RRPeer {
-	if len(rrq.allocations) == 0 {
-		return nil
-	}
-	return rrq.allocations[0]
-}
-
-func newRRPeer(p peer.ID) *RRPeer {
-	return &RRPeer{
-		id:     p,
-		served: 0,
-	}
-}
-
-func (rrp *RRPeer) exceedsAllocation(size int) bool {
-	return size > rrp.allocation
-}
+}*/
 ```

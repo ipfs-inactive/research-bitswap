@@ -1,7 +1,7 @@
 Strategy PRQ
 ============
 
-```go
+```{.go .lib}
 package decision
 
 import (
@@ -19,7 +19,7 @@ import (
 Type and Constructor
 --------------------
 
-```go
+```{.go .lib}
 // verify interface implementation
 var _ peerRequestQueue = &strategy_prq{}
 
@@ -55,7 +55,7 @@ of this, check whether `totalWeight` includes peers who don't currently have
 tasks (it may not, because it's only updated when `prq.Push()` is called...not
 certain).
 
-```go
+```{.go .lib}
 func (tl *strategy_prq) initRound() {
 	tl.rrq.resetAllocations()
 	i := 0
@@ -73,7 +73,7 @@ Push
 
 `tl.Push(entry, to, receipt)` updates peer `to`'s task queue with `entry`.
 
-```go
+```{.go .lib}
 // Push currently adds a new peerRequestTask to the end of the list
 func (tl *strategy_prq) Push(entry *wantlist.Entry, to peer.ID, receipt *Receipt) {
 	//to := l.Partner // get from receipt?
@@ -94,7 +94,7 @@ func (tl *strategy_prq) Push(entry *wantlist.Entry, to peer.ID, receipt *Receipt
 
 If the partner already has the block, we do nothing.
 
-```go
+```{.go .lib}
 	if partner.activeBlocks.Has(entry.Cid) {
 		return
 	}
@@ -102,7 +102,7 @@ If the partner already has the block, we do nothing.
 
 If the CID is already in the task queue, we update the task and return.
 
-```go
+```{.go .lib}
 	if task, ok := tl.taskMap[taskKey(to, entry.Cid)]; ok {
 		task.Entry.Priority = entry.Priority
 		partner.taskQueue.Update(task.index)
@@ -112,7 +112,7 @@ If the CID is already in the task queue, we update the task and return.
 
 Otherwise, we add the task to the peer's taskQueue.
 
-```go
+```{.go .lib}
 	task := &peerRequestTask{
 		Entry:   entry,
 		Target:  to,
@@ -136,7 +136,7 @@ Finally, we update the round-robin queue with the peer's current ledger
 set by the most recent call to `updateWeight` for each peer will be used in
 allocating peers.
 
-```go
+```{.go .lib}
 	tl.rrq.updateWeight(to, receipt)
 }
 ```
@@ -147,7 +147,7 @@ Pop
 `tl.Pop()` returns the next `peerRequestTask` to be served. Much of the
 round-robin logic is handled in the call to `tl.nextTask()`.
 
-```go
+```{.go .lib}
 // Pop 'pops' the next task to be performed. Returns nil if no task exists.
 func (tl *strategy_prq) Pop() *peerRequestTask {
 	tl.lock.Lock()
@@ -175,7 +175,7 @@ move the peer to the end of the round-robin queue.
 **TODO**: What happens with the logic around `served` if there's only one peer
 in the queue?
 
-```go
+```{.go .lib}
 	rrp.allocation -= task.Entry.Size
 	rrp.served += task.Entry.Size
 
@@ -197,7 +197,7 @@ in the queue?
 corresponding peer -- unless there is no next task, in which case it returns
 `(nil, nil)`.
 
-```go
+```{.go .lib}
 // nextTask() uses the `RRQueue` and peer `taskQueue`s to determine the next
 // request to serve
 func (tl *strategy_prq) nextTask() (rrp *RRPeer, task *peerRequestTask) {
@@ -212,7 +212,7 @@ peers in the queue, then there are either 1. no requests to serve, or 2. no
 peers with a round-robin weight greater than 0 (**TODO**: check this, and
 determine whether that's okay), and thus we return nothing.
 
-```go
+```{.go .lib}
 	if tl.rrq.numPeers() == 0 {
 		// may have finished last RR round, reallocate requests to peers
 		tl.initRound()
@@ -230,7 +230,7 @@ a valid pair if:
 
 1.  **TODO**: write out details below then fill these steps in
 
-```go
+```{.go .lib}
 	// figure out which peer should be served next
 	for tl.rrq.numPeers() > 0 {
 		rrp = tl.rrq.head()
@@ -275,7 +275,7 @@ this check or allowed 1 larger-than-peerBurst task to be served, then it might
 be game-able (if a peer just always sent absurdly large requests). might be best
 to just log this and ensure peerBurst is large enough.
 
-```go
+```{.go .lib}
 // get first non-trash task
 func (tl *strategy_prq) nextValidTask(partner *activePartner) *peerRequestTask {
 	for partner.taskQueue.Len() > 0 {
@@ -298,7 +298,7 @@ func (tl *strategy_prq) nextValidTask(partner *activePartner) *peerRequestTask {
 current allocation or consecutive serve limit. If so, it returns `true`;
 otherwise, it returns `false`.
 
-```go
+```{.go .lib}
 func (tl *strategy_prq) checkTask(rrp *RRPeer, task *peerRequestTask) bool {
 	return tl.checkTaskVsAllocation(rrp, task) && tl.checkTaskVsPeerBurst(rrp, task)
 }
@@ -314,7 +314,7 @@ Note, though, that if their allocation does not sufficiently increase in any
 future round and this task stays at the front of their queue, they'll forever
 loop in this state.) Otherwise, it return `true`.
 
-```go
+```{.go .lib}
 func (tl *strategy_prq) checkTaskVsAllocation(rrp *RRPeer, task *peerRequestTask) bool {
 	// check whether |task| exceeds peer's round-robin allocation
 	if task.Entry.Size > rrp.allocation {
@@ -333,7 +333,7 @@ func (tl *strategy_prq) checkTaskVsAllocation(rrp *RRPeer, task *peerRequestTask
 queue, resets `rrp`'s consecutive serves to 0, moves the peer to the back of the
 queue, and returns `false`. Othewrise, it returns `true`.
 
-```go
+```{.go .lib}
 func (tl *strategy_prq) checkTaskVsPeerBurst(rrp *RRPeer, task *peerRequestTask) bool {
 	// check whether serving this block would exceed the consecutive serve limit
 	if rrp.served+task.Entry.Size > tl.peerBurst {
@@ -352,7 +352,7 @@ Remove
 `tl.Remove(k, p)` removes the task for CID `k` from `p`'s task queue. The
 round-robin queue is unaffected by this function.
 
-```go
+```{.go .lib}
 // Remove removes a task from the queue
 func (tl *strategy_prq) Remove(k *cid.Cid, p peer.ID) {
 	tl.lock.Lock()
@@ -413,7 +413,7 @@ A Bitswap strategy function provides a weight to each peer based on their
 current Bitswap ledger. This value is then used to provided weighted allocations
 in the round-robin queue.
 
-```go
+```{.go .lib}
 // takes in a peer's ledger, returns RR weight for that peer
 type StrategyFunc func(r *Receipt) float64
 

@@ -11,8 +11,8 @@ import (
 	wantlist "github.com/ipfs/go-ipfs/exchange/bitswap/wantlist"
 	pq "github.com/ipfs/go-ipfs/thirdparty/pq"
 
-	cid "gx/ipfs/QmNp85zy9RLrQ5oQD4hPyS39ezrrXpcaa7R4Y9kxdWQLLQ/go-cid"
-	peer "gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
+	peer "gx/ipfs/QmWNY7dV54ZDYmTA1ykVdwNCqC11mpU4zSUp6XDpLTH9eG/go-libp2p-peer"
+	cid "gx/ipfs/QmeSrf6pzut73u6zLQkRFQ3ygt3k6XFT2kjdYP8Tnkwwyg/go-cid"
 )
 ```
 
@@ -36,20 +36,29 @@ func newStrategyPRQ(strategy Strategy) *strategy_prq {
 		taskMap:  make(map[string]*peerRequestTask),
 		partners: make(map[peer.ID]*activePartner),
 		pQueue:   pq.New(partnerCompare),
-		rrq:      NewRRQueue(strategy),
+		rrq:      newRRQueue(strategy),
+	}
+}
+
+func newStrategyPRQCustom(strategy Strategy, burst int) *strategy_prq {
+	return &strategy_prq{
+		taskMap:  make(map[string]*peerRequestTask),
+		partners: make(map[peer.ID]*activePartner),
+		pQueue:   pq.New(partnerCompare),
+		rrq:      newRRQueueCustom(strategy, burst),
 	}
 }
 ```
-
 Push
 ----
 
-`tl.Push(entry, to, receipt)` updates peer `to`'s task queue with `entry`.
+`tl.Push(entry, receipt)` updates the task queue corresponding to `receipt.Peer`
+with `entry`.
 
 ```{.go .lib}
-// Push currently adds a new peerRequestTask to the end of the list
-func (tl *strategy_prq) Push(entry *wantlist.Entry, to peer.ID, receipt *Receipt) {
-	//to := l.Partner // get from receipt?
+// Push adds a new peerRequestTask to the end of the list
+func (tl *strategy_prq) Push(entry *wantlist.Entry, receipt *Receipt) {
+	to := peer.ID(receipt.Peer)
 	tl.lock.Lock()
 	defer tl.lock.Unlock()
 	
@@ -106,8 +115,8 @@ Otherwise, we add the task to the peer's taskQueue.
 
 Finally, we update the round-robin queue with the peer's current ledger
 (`receipt`). When peers are allocated for the next round-robin round, the weight
-set by the most recent call to `updateWeight` for each peer will be used in
-allocating peers.
+set by the most recent call to `rrq.updateWeight()` for each peer will be used
+in allocating peers.
 
 ```{.go .lib}
 	tl.rrq.UpdateWeight(to, receipt)
@@ -135,7 +144,6 @@ func (tl *strategy_prq) Pop() *peerRequestTask {
 
 	// start the task
 	partner.StartTask(task.Entry.Cid)
-	// update the relevant state
 	partner.requests--
 ```
 
@@ -200,13 +208,23 @@ queue, we search for the first valid peer + task in the queue.
 			tl.rrq.Pop()
 			continue
 		}
+```
 
-        // check whether serving this task exceeds the peer's allocation
-		if tl.taskExceedsAllocation(rrp, task) {
-			continue
+Check whether serving `task` would exceed `rrp`'s current round-robin
+allocation. If so, push the task back onto the queue and remove the peer from
+the current round. (If the peer weren't removed from the round, then they'd be
+stuck in this situation forever. Note, though, that if their allocation does not
+sufficiently increase in any future round and this task stays at the front of
+their queue, they'll forever loop in this state.)
+
+```{.go .lib}
+    	// check whether |task| exceeds peer's round-robin allocation
+    	if task.Entry.Size > rrp.allocation {
+    		tl.partners[rrp.id].taskQueue.Push(task)
+    		tl.rrq.Pop()
+    		continue
 		}
 
-		delete(tl.taskMap, task.Key())
 		return rrp, task
 	}
 	return nil, nil
@@ -226,34 +244,12 @@ func (tl *strategy_prq) partnerNextTask(partner *activePartner) *peerRequestTask
 		task := partner.taskQueue.Pop().(*peerRequestTask)
 		// delete task if it's trash
 		if task.trash {
-			delete(tl.taskMap, task.Key())
+		    task = nil
 			continue
 		}
 		return task
 	}
 	return nil
-}
-```
-
-### taskExceedsAllocation
-
-`tl.taskExceedsAllocation(rrp, task)` checks whether serving `task` would exceed
-`rrp`'s current round-robin allocation. If so, then it pushes the task back onto
-the queue, removes the peer from the queue, and returns `false`. (If the peer
-weren't removed from the queue, then they'd be stuck in this situation forever.
-Note, though, that if their allocation does not sufficiently increase in any
-future round and this task stays at the front of their queue, they'll forever
-loop in this state.) Otherwise, it return `true`.
-
-```{.go .lib}
-func (tl *strategy_prq) taskExceedsAllocation(rrp *RRPeer, task *peerRequestTask) bool {
-	// check whether |task| exceeds peer's round-robin allocation
-	if task.Entry.Size > rrp.allocation {
-		tl.partners[rrp.id].taskQueue.Push(task)
-		tl.rrq.Pop()
-		return true
-	}
-	return false
 }
 ```
 

@@ -5,7 +5,7 @@ Round-Robin Queue
 package decision
 
 import (
-	peer "gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
+	peer "gx/ipfs/QmWNY7dV54ZDYmTA1ykVdwNCqC11mpU4zSUp6XDpLTH9eG/go-libp2p-peer"
 )
 ```
 
@@ -55,7 +55,7 @@ type RRQueue struct {
 	allocations []*RRPeer
 }
 
-func NewRRQueue(s Strategy) *RRQueue {
+func newRRQueue(s Strategy) *RRQueue {
 	return &RRQueue{
 		roundBurst:  1000,
 		strategy:    s,
@@ -65,7 +65,7 @@ func NewRRQueue(s Strategy) *RRQueue {
 }
 
 // TODO: accept config object
-func NewRRQueueCustom(burst int, s Strategy) *RRQueue {
+func newRRQueueCustom(s Strategy, burst int) *RRQueue {
 	return &RRQueue{
 		roundBurst:  burst,
 		strategy:    s,

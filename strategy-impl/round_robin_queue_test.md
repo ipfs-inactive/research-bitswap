@@ -7,8 +7,8 @@ package decision
 import (
     "testing"
 
-    peer "gx/ipfs/QmXYjuNuxVzXKJCfWasQk1RqkhVLDM9jtUKhqc2WPQmFSB/go-libp2p-peer"
-    testutil "gx/ipfs/QmQgLZP9haZheimMHqqAjJh2LhRmNfEoZDfbtkpeMhi9xK/go-testutil"
+	peer "gx/ipfs/QmWNY7dV54ZDYmTA1ykVdwNCqC11mpU4zSUp6XDpLTH9eG/go-libp2p-peer"
+	testutil "gx/ipfs/QmeDA8gNhvRTsbrjEieay5wezupJDiky8xvCzDABbsGzmp/go-testutil"
 )
 ```
 
@@ -28,7 +28,7 @@ Create a new RRQ, and an array to stored the expected allocations for each peer.
 
 ```{.go .lib}
     roundBurst := 50
-    rrq := NewRRQueueCustom(roundBurst, Simple)
+    rrq := newRRQueueCustom(Simple, roundBurst)
     numPeers := 5
 ```
 
@@ -96,7 +96,7 @@ containing all integers in the range `[0, numPeers - 1]`).
 ```{.go .lib}
 func TestRRQWeightAllocationsVarying(t *testing.T) {
     roundBurst := 50
-    rrq := NewRRQueueCustom(roundBurst, Simple)
+    rrq := newRRQueueCustom(Simple, roundBurst)
     numPeers := 5
     expected := make(map[peer.ID]int)
 
@@ -139,7 +139,7 @@ predominant function a
 ```{.go .lib}
 func TestRRQPopHeadShift(t *testing.T) {
     roundBurst := 50
-    rrq := NewRRQueueCustom(roundBurst, Simple)
+    rrq := newRRQueueCustom(Simple, roundBurst)
     numPeers := 5
 
     for i := 0; i < numPeers; i++ {

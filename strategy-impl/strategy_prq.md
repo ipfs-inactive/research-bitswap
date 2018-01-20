@@ -49,6 +49,7 @@ func newStrategyPRQCustom(strategy Strategy, burst int) *strategy_prq {
 	}
 }
 ```
+
 Push
 ----
 
@@ -290,5 +291,19 @@ func (tl *strategy_prq) Remove(k *cid.Cid, p peer.ID) {
 		tl.pQueue.Update(partner.index)
 	}
 	tl.lock.Unlock()
+}
+```
+
+Helpers
+-------
+
+```{.go .lib}
+func (tl *strategy_prq) allocationForPeer(id peer.ID) int {
+    for _, rrp := range tl.rrq.allocations {
+        if rrp.id == id {
+            return rrp.allocation
+        }
+    }
+    return 0
 }
 ```

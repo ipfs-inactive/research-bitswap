@@ -5,6 +5,7 @@ Strategy PRQ Tests
 package decision
 
 import (
+    "fmt"
     "math"
 	"math/rand"
 	"sort"
@@ -98,10 +99,10 @@ func TestSPRQPushPopServeAll(t *testing.T) {
 
     l := newLedger(partner).Receipt()
     l.Value = 1
-    size := 5
+    blockSize := 5
 	for index, letter := range alphabet { // add blocks for all letters
 		c := cid.NewCidV0(u.Hash([]byte(letter)))
-		prq.Push(&wantlist.Entry{Cid: c, Priority: math.MaxInt32 - index, Size: size}, l)
+		prq.Push(&wantlist.Entry{Cid: c, Priority: math.MaxInt32 - index, Size: blockSize}, l)
 	}
 
     expectedAllocation := roundBurst
@@ -114,7 +115,7 @@ func TestSPRQPushPopServeAll(t *testing.T) {
 		if expectedAllocation == 0 {
 		    expectedAllocation = roundBurst
 		}
-		expectedAllocation -= size
+		expectedAllocation -= blockSize
 		if prq.allocationForPeer(partner) != expectedAllocation {
 		    t.Fatalf("Expected allocation of %d, got %d", expectedAllocation, prq.allocationForPeer(partner))
 		}
@@ -152,10 +153,10 @@ func TestSPRQPushPop1Round(t *testing.T) {
 
     l := newLedger(partner).Receipt()
     l.Value = 1
-    size := 5
+    blockSize := 5
 	for index, letter := range alphabet { // add blocks for all letters
 		c := cid.NewCidV0(u.Hash([]byte(letter)))
-		prq.Push(&wantlist.Entry{Cid: c, Priority: math.MaxInt32 - index, Size: size}, l)
+		prq.Push(&wantlist.Entry{Cid: c, Priority: math.MaxInt32 - index, Size: blockSize}, l)
 	}
 
     expectedAllocation := 100
@@ -167,7 +168,7 @@ func TestSPRQPushPop1Round(t *testing.T) {
 		}
 		received := prq.Pop()
 		firstRound = false
-		expectedAllocation -= size
+		expectedAllocation -= blockSize
 		if prq.allocationForPeer(partner) != expectedAllocation {
 		    t.Fatalf("Expected allocation of %d, got %d", expectedAllocation, prq.allocationForPeer(partner))
 		}
@@ -216,34 +217,127 @@ func TestSPRQPushPop5Peers(t *testing.T) {
 	}
 	inputs := [5]string{"a", "ab", "abc", "abcd", "abcde"}
 
-    size := 10
+    blockSize := 10
     for i, letters := range inputs {
         l := newLedger(partners[i]).Receipt()
         l.Value = float64(i + 1)
         for j, letter := range strings.Split(letters, "") {
     		c := cid.NewCidV0(u.Hash([]byte(letter)))
-    		prq.Push(&wantlist.Entry{Cid: c, Priority: math.MaxInt32 - j, Size: size}, l)
+    		prq.Push(&wantlist.Entry{Cid: c, Priority: math.MaxInt32 - j, Size: blockSize}, l)
         }
     }
 
 	numServes := 0
-	var out []string
 	for {
 		received := prq.Pop()
 		if received == nil {
 		    break
 		}
 		numServes += 1
-		expectedAllocations[received.Target] -= size
+		expectedAllocations[received.Target] -= blockSize
 		if prq.allocationForPeer(received.Target) != expectedAllocations[received.Target] {
 		    t.Fatalf("Peer %d: Expected allocation of %d, got %d", received.Target.String(),
     		    expectedAllocations[received.Target], prq.allocationForPeer(received.Target))
 		}
-		out = append(out, received.Entry.Cid.String())
 	}
 
     if numServes != 15 {
         t.Fatalf("Expected 15 serves, got %d", numServes)
     }
+}
+```
+
+```{.go .lib}
+func TestSPRQSimpleStrategy(t *testing.T) {
+    testStrategy(t, Simple)
+}
+
+func TestSPRQExpStrategy(t *testing.T) {
+    testStrategy(t, Exp)
+}
+```
+
+```{.go .lib}
+func testStrategy(t *testing.T, strategy Strategy) {
+    numPartners := 10
+    blockSize := 1
+	partners := make([]peer.ID, numPartners)
+	ledgers := make([]*Receipt, numPartners)
+	expectedAllocations := make(map[peer.ID]int)
+	alphabet := strings.Split("abcdefghijklmnopqrstuvwxyz", "")
+
+    // set up peer ledgers and calculate the total weight for the round robin round
+    totalWeight := float64(0)
+    for i := 0; i < numPartners; i += 1 {
+    	partners[i] = testutil.RandPeerIDFatal(t)
+        ledgers[i] = newLedger(partners[i]).Receipt()
+        ledgers[i].Value = float64(i)
+        totalWeight += strategy(ledgers[i])
+    }
+
+    roundBurst := int(totalWeight)
+	prq := newStrategyPRQCustom(strategy, roundBurst)
+	// calculate expected allocation for each peer and add blocks to queues
+	for i, _ := range partners {
+    	expectedAllocations[partners[i]] = int(strategy(ledgers[i]) / totalWeight * float64(roundBurst))
+    	// add 26 blocks to each peer's queue
+    	for j := 0; j < len(alphabet); j += 1 {
+    	    // add unique cid to peer's queue
+    		c := cid.NewCidV0(u.Hash([]byte(fmt.Sprintf("%s%d", alphabet[j], i))))
+    		prq.Push(&wantlist.Entry{Cid: c, Priority: math.MaxInt32 - i - j, Size: blockSize}, ledgers[i])
+    	}
+	}
+
+    out := make(map[peer.ID][]string)
+    // copy the expected allocations, as we'll need the original map later
+    allocations := make(map[peer.ID]int)
+    for id, allocation := range expectedAllocations {
+        allocations[id] = allocation
+    }
+
+	// pop peers until there are no more blocks or the round ends
+	for {
+		received := prq.Pop()
+		if received == nil{
+		    break
+		}
+		out[received.Target] = append(out[received.Target], received.Entry.Cid.String())
+		// check whether round ended
+		if prq.rrq.NumPeers() == 0 {
+		    break
+		}
+		allocations[received.Target] -= blockSize
+		// check that allocation is as expected
+		if prq.allocationForPeer(received.Target) != allocations[received.Target] {
+		    t.Fatalf("Peer %d: Expected allocation of %d, got %d", received.Target,
+    		    allocations[received.Target], prq.allocationForPeer(received.Target))
+		}
+	}
+
+    // check that the blocks popped in expected order for each peer
+    for i, partner := range partners {
+        numBlocks := min(expectedAllocations[partner], len(alphabet))
+        if len(out[partner]) != numBlocks {
+            t.Fatalf("Partner %s: Expected %d popped blocks, got %d", partner, numBlocks, len(out[partner]))
+        }
+    	for j := 0; j < numBlocks; j += 1 {
+    		exp := cid.NewCidV0(u.Hash([]byte(fmt.Sprintf("%s%d", alphabet[j], i)))).String()
+            if out[partner][j] != exp {
+                t.Fatalf("Expected %s, received %s", exp, out[partner][j])
+            }
+        }
+    }
+}
+```
+
+Helper Functions
+----------------
+
+```{.go .lib}
+func min(x, y int) int {
+    if x <= y {
+        return x
+    }
+    return y
 }
 ```

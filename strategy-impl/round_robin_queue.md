@@ -5,6 +5,8 @@ Round-Robin Queue
 package decision
 
 import (
+    "math"
+
 	peer "gx/ipfs/QmWNY7dV54ZDYmTA1ykVdwNCqC11mpU4zSUp6XDpLTH9eG/go-libp2p-peer"
 )
 ```
@@ -135,9 +137,7 @@ func (rrq *RRQueue) Head() *RRPeer {
 
 ```{.go .lib}
 func (rrq *RRQueue) Shift() {
-	var peer *RRPeer
-	peer, rrq.allocations = rrq.allocations[0], rrq.allocations[1:]
-	rrq.allocations = append(rrq.allocations, peer)
+    rrq.allocations[0], rrq.allocations[len(rrq.allocations) - 1] = rrq.allocations[len(rrq.allocations) - 1], rrq.allocations[0]
 }
 ```
 
@@ -179,5 +179,9 @@ func Simple(r *Receipt) float64 {
 		return 0
 	}
 	return r.Value
+}
+
+func Exp(r *Receipt) float64 {
+    return 100 / (1 + math.Exp(2 - r.Value))
 }
 ```

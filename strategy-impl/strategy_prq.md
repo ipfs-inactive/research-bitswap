@@ -243,12 +243,10 @@ task map.
 func (tl *strategy_prq) partnerNextTask(partner *activePartner) *peerRequestTask {
 	for partner.taskQueue.Len() > 0 {
 		task := partner.taskQueue.Pop().(*peerRequestTask)
-		// delete task if it's trash
-		if task.trash {
-		    task = nil
-			continue
+		// return task if it's not trash
+		if !task.trash {
+		    return task
 		}
-		return task
 	}
 	return nil
 }

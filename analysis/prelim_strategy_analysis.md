@@ -1,15 +1,17 @@
 ---
-title: Bitswap Analysis
+title: 'Bitswap: Model and Preliminary Analysis'
 subtitle: 3 Strategies
 author: David Grisham
 header-includes:
     - \usepackage{mathtools}
+    - \usepackage{amsmath}
     - \usepackage{multirow,array}
     - \usepackage{float}
     - \restylefloat{table}
     - \DeclarePairedDelimiter\abs{\lvert}{\rvert}
     - \newcommand{\Network}{\ensuremath{\mathcal{N}}}
-    - \newcommand{\Nbhd}[1]{\mathcal{N}_{#1}}
+    - \newcommand{\Nbhd}[1]{\ensuremath{\mathcal{N}_{#1}}}
+    - \let\iff\Longleftrightarrow
 ...
 
 **TODO**: Ensure periods at the end of all bullet points/lists are consistent
@@ -18,11 +20,29 @@ header-includes:
 
 ---
 
-In this paper, we analyze 3 strategies for a simple 2-player Bitswap infinitely
-repeated game. We start by defining the system in the most general case, then do
-an analysis on a system subject to simplifying constraints.
+Introduction
+============
+
+**TODO**: review this section
+
+The InterPlanetary File System (IPFS) is a peer-to-peer data distribution
+protocol \[**TODO: cite**\] for sharing hypermedia. IPFS draws inspiration from
+powerful techniques such as distributed hash tables, sharding, content-addressed
+data, linked data, and self-certified file systems. At a high level, an IPFS
+network may be thought of as a Git repository shared in a BitTorrent-like swarm.
+IPFS has many potential applications, including sharing files within a corporate
+context, library archival, and, perhaps the most ambitious one, replacing HTTP
+as the primary file distribution protocol used on the Internet.
 
 Bitswap is the data exchange protocol for the InterPlanetary File System (IPFS).
+Bitswap's most direct influence is BitTorrent \[**TODO: cite**\] -- like a
+BitTorrent client, Bitswap determines how to effectively allocate resources
+(e.g. bandwidth) to peers. In this work, we primarily focus on Bitswap from a
+game-theoretic perspective. **TODO: finish this off somehow, transition to next
+section**
+
+**TODO: get info in the below paragraph somewhere (if it needs to be)**
+
 Our model is meant to reflect this use case of Bitswap as the decision engine
 implemented by each user in a peer-to-peer distributed file system. In this
 distributed file system of many users, each user is connect to a set of peers
@@ -37,116 +57,119 @@ $1$ sends the same amount of data to both $2$ and $3$ over that time), then peer
 $1$ might allocate $\frac{2}{3}$ of its bandwidth to peer $2$ and $\frac{1}{3}$
 to peer $3$ at time $t$.
 
-**TODO**: necessary to explicitly mention strategies here? trying to stay
-informal, but might still be a good idea
+System Model
+============
 
-System
-======
+Network Graph
+-------------
 
-We have a network \Network of $\abs{\Network}$ users. The terms *users* and
-*players* will be used somewhat interchangeably, depending on context; the term
-*peers* is used similarly, but primarily refers to users who are connected (and
-thus participate as players in the same Bitswap game). Each of the users has a
-neighborhood of peers, which is the set of users they are connected to. Each
-pair of peers plays an infinitely repeated Bitswap game. The resource that users
-have to offer to their peers is bandwidth. We make the following simplifying
-assumptions about user's bandwidth:
+We model an IPFS swarm as a network \Network of $\abs{\Network}$ users. The
+graphical representation consists of
 
-1.  All users have the same amount of bandwidth to offer.
-2.  A single user has the same amount of bandwidth to offer at each time step.
+-   *nodes* representing users;
+-   an *edge* representing a peering between two users; and
+-   *unweighted*, *undirected* edges.
 
-In other words, bandwidth is constant both in peer-space and in time. **TODO**:
-worth saying it this way, or is 'peer-space' confusing? 
+A user's *neighborhood* is their set of peers, i.e. the set of nodes that the
+user is connected to by an edge. User $i$'s neighborhood is denoted by
+$\Nbhd{i} \subseteq \Network$.
 
-We also make the assumption that *all users always have unique data that all of
-their peers want*. So, whenever a peer plays $R$, they'll always have some data
-to send to all of their peers. This, of course, contrasts a more realistic
-scenario where a peer chooses to reciprocate but simply does not have anything
-that their peers want at the current time.
+**TODO: anything else to add here?**
 
-Actions and Utility Functions
------------------------------
+Game Formulation
+---------------- 
 
-**TODO**: ensure lower bound for $t$ is consistently 0 (and not typo'd as 1)
+**TODO: may want to update all references 'bandwidth' with 'data'**
 
-A player has two possible actions: reciprocate ($R$) or defect ($D$). The
-utility function for player $i$ at time $t$ $u_i^t$:
+All users in the network participate in the Bitswap game. The Bitswap game is an
+*infinitely repeated* (**TODO: complete or incomplete info?**) game where users
+exchange bandwidth. The game is separated into discrete *rounds* with an
+individual round denoted by $t$, where $t$ is a non-negative integer. The game
+model has the following properties:
 
-$$
-u_i^t = \sum_{j \in \Nbhd{i}} \delta_{a_j^{t}R}\ 
-              S_j(d_{ji}^t\,,\,\mathbf{d}_j^{-i,t})\ B
-         \:-\:\delta_{a_i^t R}\ B \\
-$$
+-   The *players* are the IPFS users in the network \Network.
+-   $a_i^t \in \{R, D\}$ is the *action* user $i$ takes in round $t$, where $R$
+    and $D$ represent reciprocation and defection, respectively. When a user
+    reciprocates, they allocate resources toward sending data to their peers;
+    when the user defects, they do not send data to their peers.
 
-where
+We also include two simplifying constraints:
 
--   $\Nbhd{i} \subseteq \Network$ is the neighborhood of user $i$ (i.e. the set
-    of peers $i$ is connected to)
--   $a_i^t \in \{R, D\}$ is the action user $i$ takes in round $t$
--   $\delta{ij}$ is the kronecker delta function
--   $d_{ji}^t$ is the reputation of user $i$ as viewed by peer $j$ (also
-    referred to as the *debt ratio* from $i$ to $j$) in round $t$
--   $\mathbf{d}_j^{-i,t} = (d_{jk}^t \mid \forall k \in \Nbhd{j}, k \neq i)$ is
-    the vector of debt ratios for all of user $j$'s peers (as viewed by peer
-    $j$) in round $t$, *excluding* peer $i$
--   $S_j(d_{ij}^t, \mathbf{d}_j^{-i,t}) \in \{0, 1\}$ is the *reciprocation
-    function* of user $j$. This function considers the relative reputation of
-    peer $i$ to the rest of $j$'s peers, and returns a weight for peer $i$. This
-    weight is used to determine what proportion of $j$'s bandwidth to allocate
-    to peer $i$ in round $t$.
--   $B > 0$ is the (constant) amount of bandwidth that a user has to offer in a
-    given round
+1.  Each user has the same amount of bandwidth to distribute among their peers
+    in every round.
+2.  All users always have unique data that all of their peers want. So, when a
+    user allocates bandwidth to a particular peer, that bandwidth can always be
+    fully utilized.
 
-The terms *strategy* and *reciprocation function* are defined as:
-
--   A *strategy* is meant in the standard game-theoretical sense, which is a
-    predetermined set of actions that a user will take in a game (potentially
-    dependent on that user's previous payoffs, the actions of its peers, etc.).
--   A *reciprocation function* is a term used to specify the weighting function
-    that a user uses when running the Bitswap protocol to determine how much
-    bandwidth it wants to allocate to each of its peers whenever it's playing
-    the $R$ strategy.
-
-Putting this all together, we see that the utility of peer $i$ in round $t$ is
-the total amount of bandwidth that $i$ is allocated by its neighboring peers,
-minus the amount of bandwidth that $i$ provides to its peers. If $i$
-reciprocates, then we say that they provide a total of $B$ bandwidth to the
-network; otherwise (when $i$ defects), $i$ provides $0$ bandwidth in that round.
-
-We can write the debt ratio $d_{ij}$ in terms of the number of bits exchanged
-between peers $i$ and $j$:
+We define $b_{ji}^t$ as the total number of bits sent from user $j$ to peer $i$
+from round $0$ to $t-1$. Then we can define the *debt ratio* $d_{ji}$ from user
+$j$ to peer $i$ as
 
 $$
 d_{ji}^t = \frac{b_{ji}^{t-1}}{b_{ij}^{t-1}\:+\:1}
 $$
 
-where $b_{ij}^{t-1}$ is the total number of bits sent from $i$ to $j$ from round
-$0$ through round $t-1$ (so, all rounds prior to round $t$).
+$d_{ji}^t$ can be thought of as peer $i$'s reputation in the eyes of user $j$.
+This reputation is then considered by user $j$'s *reputation function*
+$S_j(d_{ji}^t, \mathbf{d}_j^{-i,t}) \in \{0, 1\}$, where
+$\mathbf{d}_j^{-i,t} = (d_{jk}^t \mid \forall k \in \Nbhd{j}, k \neq i)$ is the
+vector of debt ratios for all of user $j$'s peers in round $t$ *excluding* peer
+$i$. The reputation function considers the relative reputation of peer $i$ to
+the rest of $j$'s peers, and returns a weight for peer $i$. This weight is used
+to determine what proportion of $j$'s bandwidth to allocate to peer $i$ in round
+$t$. A specific example of a reciprocation function is given in Section
+\ref{analysis}.
 
-We can define $b_{ij}^t$ in terms of $b_{ij}^{t}$ and $\delta_{a_i^t R}$ as
-follows:
-
-$$
-b_{ij}^t = b_{ij}^{t-1}\:+\:
-           \delta_{a_i^{t-1} R}\ S_i(d_{ij}^t\,,\,\mathbf{d}_i^{-j,t})\ B
-$$
-
-So, the total number of bits sent from $i$ to $j$ increases by
-$S_i(d_{ij}^t, \mathbf{d}_i^{-j,t}) B$ (the proportion of $i$'s total bandwidth
-that $i$ allocates to $j$) if and only if peer $i$ reciprocated in round $t-1$
-(i.e., $a_i^{t-1} = R \implies \delta_{a_i^{t-1} R} = 1$).
-
-Now we can write $d_{ij}^{t+1}$ in terms of values from round $t$.
+We can now formally define $b_{ij}^t$ recursively using the debt ratio and the
+kronecker delta function $\delta_{ij}$:
 
 $$
-d_{ij}^{t+1} = \frac{b_{ij}^{t}\:+\:
-                  \delta_{a_i^t R}\ S_i(d_{ij}^t\,,\,\mathbf{d}_i^{-j,t})\ B}
-               {b_{ji}^t\:+\:\delta_{a_j^t R}\ S_j(d_{ji}^t\,,\,\mathbf{d}_j^{-i,t})
-                 \ B\:+\:1}
+b_{ij}^t =
+  \begin{cases}
+    0 & t = 0 \\
+    b_{ij}^{t-1}\:+\:
+      \delta_{a_i^{t-1} R}\ S_i(d_{ij}^t\,,\,\mathbf{d}_i^{-j,t})\ B & \text{otherwise} \\
+  \end{cases}
 $$
+
+Considering the recursive case of this definition, we see that the total number
+of bits sent from $i$ to $j$ increases by $S_i(d_{ij}^t, \mathbf{d}_i^{-j,t}) B$
+(the proportion of $i$'s total bandwidth that $i$ allocates to $j$ in round $t$)
+if and only if peer $i$ reciprocated in round $t-1$ (i.e.,
+$a_i^{t-1} = R \implies \delta_{a_i^{t-1} R} = 1$).
+
+Putting all of this together, we define the utility function for player $i$ at
+time $t$:
+
+$$
+u_i^t = \sum_{j \in \Nbhd{i}} \delta_{a_j^{t}R}\ 
+              S_j(d_{ji}^t\,,\,\mathbf{d}_j^{-i,t})\ B
+         \:-\:\delta_{a_i^t R}\ c \\
+$$
+
+where
+
+-   $B > 0$ is the amount of bandwidth that a user distributes among its peers;
+    and
+-   $c > 0$ is the cost incurred when reciprocating (due to bandwidth, energy,
+    etc.).
+
+Putting all of this together, we see that the utility of peer $i$ in round $t$
+is the total amount of bandwidth that $i$ is allocated by its neighboring peers,
+minus the cost to $i$ for providing data to its peers (if it does so). If $i$
+reciprocates, then we say that they provide a total of $B$ bandwidth to their
+neighborhood \Nbhd{i}; otherwise (when $i$ defects), $i$ provides $0$ bandwidth
+in that round.
+
+**TODO: fit the following sentences somewhere (or remove it)** We start by
+defining the system in the most general case, then do an analysis on a system
+subject to simplifying constraints.
+
+**TODO**: ensure lower bound for $t$ is consistently 0 (and not typo'd as 1)
 
 Analysis
 ========
+\label{analysis}
 
 For the purposes of this analysis, we make an additional assumption: each user's
 neighborhood is constant -- so any given pair of peers is connected for the
@@ -160,7 +183,7 @@ S_j(d_{ji}^t\,,\,\mathbf{d}_j^{-i,t}) = \frac{d_{ji}^t}
     {\sum_{k \in \Nbhd{j}} d_{jk}^t}
 $$
 
-We make the additional caveat that $d_{ji}^0\ \forall\ i, j \in \Network$ --
+We make the additional caveat that $d_{ji}^0 = 1\ \forall\ i, j \in \Network$ --
 think of this as an initial optimistic send for bootstrapping purposes
 (otherwise, peers would never send each other anything). (**TODO**: best place
 to say this?)
@@ -171,7 +194,7 @@ gives:
 $$
 u_i^t = \sum_{j \in \Nbhd{i}} \frac{\delta_{a_j^{t}R}\ d_{ji}^t}
            {\sum_{k \in \Nbhd{j}} d_{jk}^t}\ B
-        \:-\:\delta_{a_i^t R}\ B \\
+        \:-\:\delta_{a_i^t R}\ c \\
 $$
 
 Based on this, we can characterize a single round of the 2-player (symmetric)
@@ -190,7 +213,7 @@ game with the following payoff matrix:
     \multirow{2}*{Player $1$}
     & $D$ & $0                       $ & $B (1 - \delta_{d_{12}^{t-1} 0})$
     \\\cline{3-4}
-    & $R$ & $-B (1 - \delta_{d_{21}^{t-1} 0})$ & $B (1 - \delta_{d_{12}^{t-1} 0}) - B (1 - \delta_{d_{21}^{t-1} 0})$
+    & $R$ & $-c (1 - \delta_{d_{21}^{t-1} 0})$ & $B (1 - \delta_{d_{12}^{t-1} 0}) - c (1 - \delta_{d_{21}^{t-1} 0})$
     \\\cline{3-4}
   \end{tabular}
 \end{table}
@@ -202,13 +225,12 @@ game with the following payoff matrix:
     & \multicolumn{1}{c}{} & \multicolumn{2}{c}{Player $2$}\\
     & \multicolumn{1}{c}{} & \multicolumn{1}{c}{$D$}  & \multicolumn{1}{c}{$R$} \\\cline{3-4}
     \multirow{2}*{Player $1$}
-    & $D$ & $(0,0)                       $ & $(1 - \delta_{d_{12}^{t-1} 0}) (B, -B)$
+    & $D$ & $(0,0)                       $ & $(1 - \delta_{d_{12}^{t-1} 0}) (B, -c)$
     \\\cline{3-4}
-    & $R$ & $(1 - \delta_{d_{21}^{t-1} 0})(-B,B)$ & $(1 - \delta_{d_{12}^{t-1} 0}) (B, -B) + (1 - \delta_{d_{21}^{t-1} 0})(-B,B)$
+    & $R$ & $(1 - \delta_{d_{21}^{t-1} 0})(-c,B)$ & $(1 - \delta_{d_{12}^{t-1} 0}) (B, -c) + (1 - \delta_{d_{21}^{t-1} 0})(-c,B)$
     \\\cline{3-4}
   \end{tabular}
 \end{table}
-
 
 When a player defects, they provide no bandwidth and thus their opponent gets a
 payoff of $0$. When a player reciprocates, they base their reciprocation on
@@ -230,14 +252,8 @@ ratio is $0$, they won't provide any bandwidth. This explains the payoffs in the
 $(D, R)$ and $(R, D)$ cases. The $(R, R)$ case is simply the superposition of
 the $(D, R)$ and $(R, D)$ cases.
 
-This particular formulation of the Bitswap game is zero-sum. In fact, the
-Bitswap game (under ideal conditions, i.e. no packet loss, etc.) is generally
-(**TODO**: meaning of 'generally' is unclear -- greater number of players,
-incomplete graph, different reciprocation strategies, etc.) zero-sum, since one
-player's gain in bandwidth is exactly another's loss. This is one difference
-between this game and the Prisoner's Dilemma, which is not a zero-sum game.
 (**TODO**: worth mentioning PD here/should I mention it earlier? what are the
-other differences between this and PD?)
+differences between this and PD?)
 
 As this is an infinitely repeated game, we want to be able to calculate the
 discounted average payoff of player $i$, $U_i$.
@@ -304,11 +320,14 @@ An additional note on notation: as the reciprocation function requires
 information about the game's history to decide how to allocate resources, we
 will often write is as a function. For example, if player 1's action is $R(0)$,
 this means that player 1 is playing the reciprocation action ($R$) but their
-peer, player 2, provided $0$ bandwidth in the previous round. Similarly, player
-1 taking action $R(B)$ means the same except player 2 provided $B$ bandwidth in
-the previous round. When a player reciprocates at $t=0$, we write their action
-as $R(B)$ to reflect the fact that they will optimistically send in the initial
-round (since there would be no history at that point).
+peer, player 2, provided $0$ bandwidth in the previous round -- correspondingly,
+player 1 playing $R(0)$ does *not* incur the cost of reciprocation $c$ for
+player 1 since they are not providing any resources. Similarly, player 1 taking
+action $R(B)$ player 2 provided $B$ bandwidth in the previous round (and player
+1 will be subject to cost $c$ when reciprocating in this case). When a player
+reciprocates at $t=0$, we write their action as $R(B)$ to reflect the fact that
+they will optimistically send in the initial round (since there would be no
+history at that point).
 
 Tit-for-Tat
 -----------
@@ -407,8 +426,9 @@ round). The players alternate between these two states and exchange bandwidth
 forever. Thus,
 
 \begin{align*}
-U_2 &= (1 - \epsilon_2) (B - \epsilon_2 B + \epsilon_2^2 B - \ldots) \\
-    &= \frac{1 - \epsilon_2}{1 + \epsilon_2}\:B
+U_2 &= (1 - \epsilon_2) (B - \epsilon_2 c + \epsilon_2^2 B - \epsilon_2^3 c + \ldots) \\
+    &= (1 - \epsilon_2) (B - \epsilon_2 c) \frac{1}{1 - \epsilon_2^2} \\
+    &= \frac{B - \epsilon_2 c}{1 + \epsilon_2}
 \end{align*}
 
 When player 2 does deviate from TFT:
@@ -426,8 +446,7 @@ player 2 providing nothing in the previous round). The resulting bandwidth
 exchanges are the same as in the previous non-deviating case, and thus
 
 \begin{align*}
-U_2' &= (1 - \epsilon_2) (B - \epsilon_2 B + \epsilon_2^2 B - \ldots) \\
-    &= \frac{1 - \epsilon_2}{1 + \epsilon_2}\:B
+U_2' = \frac{B - \epsilon_2 c}{1 + \epsilon_2}
 \end{align*}
 
 Thus, $U_2' = U_2$ in this case.
@@ -444,12 +463,9 @@ When player 2 doesn't deviate from TFT:
 Thus,
 
 \begin{align*}
-U_2 &= (1 - \epsilon_2) (-B + \epsilon_2 B - \epsilon_2^2 B + \ldots) \\
-    &= - \frac{1 - \epsilon_2}{1 + \epsilon_2}\:B
+U_2 &= (1 - \epsilon_2) (-c + \epsilon_2 B - \epsilon_2^2 c + \epsilon_2^3 B - \ldots) \\
+    &= -\frac{c - \epsilon_2 B}{1 + \epsilon_2}
 \end{align*}
-
-As we have bounded the discount factor by $0 < \epsilon_2 < 1$, the utility in
-this case is bounded by $-B < U_2 < 0$.
 
 When player 2 does deviate from TFT:
 
@@ -463,13 +479,11 @@ U_2' &= (1 - \epsilon_2) (0 - \epsilon_2 0 + \epsilon_2^2 0 - \ldots) \\
      &= 0
 \end{align*}
 
-We get a differently result in this case, namely $U_2' > U_2$. Therefore, **TFT
-is not an SPNE for this game**.
+Comparing these results, we see that $c > \epsilon_2 B \iff U_2' > U_2$. This
+means that, at the very least, TFT is **not** an SPNE for this game when
+$c > \epsilon_2 B$.
 
 ### Case 4: $(R, R)$
-
-We have already proven that TFT is not an SPNE. This case gives that result as
-well.
 
 When player 2 doesn't deviate from TFT:
 
@@ -481,7 +495,8 @@ When player 2 doesn't deviate from TFT:
 Thus,
 
 \begin{align*}
-U_2 = 0
+U_2 &= (1 - \epsilon_2) (B - c + \epsilon_2 (B - c) + \epsilon_2 ^ 2 (B - c) + \ldots) \\
+    &= B - c
 \end{align*}
 
 When player 2 does deviate from TFT:
@@ -494,11 +509,13 @@ When player 2 does deviate from TFT:
 Thus,
 
 \begin{align*}
-  U_2' = \frac{1 - \epsilon_2}{1 + \epsilon_2}\:B
+U_2' &= (1 - \epsilon_2) (B - \epsilon_2 c + \epsilon_2^2 B - \epsilon_2^3 c + \ldots) \\
+     &= \frac{B - \epsilon_2 c}{1 + \epsilon_2}
 \end{align*}
 
-We again get the result $U_2' > U_2$, which also indicates that TFT is not an
-SPNE.
+Comparing $U_2'$ and $U_2$, we again get the result that
+$c > \epsilon_2 B \iff U_2' > U_2$. Thus, **TFT is an SPNE for the two player
+Bitswap game when $c \leq \epsilon_2 B$**.
 
 Grim-Trigger
 ------------
@@ -518,75 +535,10 @@ $$
 
 where $i, j \in \{1, 2\}$ and $i \neq j$.
 
-### Case 1: $(D, D)$
+### Proof that GT is not an SPNE
 
-In this first case, both players play $D$ in round $t=0$. As both users are
-playing GT, each user defects for all succeeding rounds since their peer played
-$D$ at some point in the past. Thus, the resulting strategy sequence is:
-
-     $t$     $0$   $1$   $2$   $3$   $4$   ...
-  --------- ----- ----- ----- ----- ----- -----
-   $a_1^t$    D     D     D     D     D    ...
-   $a_2^t$    D     D     D     D     D    ...
-
-Thus,
-
-$$
-U_2 = 0
-$$
-
-When player 2 deviates from GT:
-
-     $t$     $0$   $1$    $2$   $3$   $4$   ...
-  --------- ----- ------ ----- ----- ----- -----
-   $a_1^t$    D     D      D     D     D    ...
-   $a_2^t$    D    R(0)    D     D     D    ...
-
-In this case, player 1's strategy is still $D$ for all rounds, since 2 played
-$D$ at $t=0$. Player 2 reciprocates at $t=1$, but as it's based on player 1 playing $D$
-in the previous round they provide no bandwidth. So the result is the same as
-the previous case:
-
-$$
-U_2' = 0
-$$
-
-Thus, $U_2' = U_2$ in this case and we must continue evaluating the initial
-conditions to determine whether GT is an SPNE.
-
-### Case 2: $(D, R)$
-
-When player 2 does not deviate from GT:
-
-     $t$     $0$    $1$    $2$   $3$   $4$   ...
-  --------- ------ ------ ----- ----- ----- -----
-   $a_1^t$    D     R(B)    D     D     D    ...
-   $a_2^t$   R(B)    D      D     D     D    ...
-
-Thus,
-
-$$
-U_2 = (1 - \epsilon_2)\:B
-$$
-
-When player 2 deviates from GT:
-
-     $t$     $0$    $1$    $2$    $3$   $4$   ...
-  --------- ------ ------ ------ ----- ----- -----
-   $a_1^t$    D     R(B)   R(0)    D     D    ...
-   $a_2^t$   R(B)   R(0)    D      D     D    ...
-
-Thus,
-
-\begin{align*}
-U_2' = -(1 - \epsilon_2)\:B
-\end{align*}
-
-In this case, $U_2' < U_2$.
-
-### Case 3: $(R, D)$
-
-When player 2 does not deviate from GT:
+Consider the initial case of $(R, D)$. The strategy sequences under this initial
+state with both players playing GT is
 
      $t$     $0$    $1$    $2$   $3$   $4$   ...
   --------- ------ ------ ----- ----- ----- -----
@@ -596,10 +548,10 @@ When player 2 does not deviate from GT:
 Thus,
 
 $$
-U_2 = -(1 - \epsilon_2)\:B
+U_2 = -(1 - \epsilon_2)\:c
 $$
 
-When player 2 deviates from GT:
+When player 2 deviates from GT, the sequence is:
 
      $t$     $0$    $1$   $2$   $3$   $4$   ...
   --------- ------ ----- ----- ----- ----- -----
@@ -612,39 +564,7 @@ $$
 U_2' = 0
 $$
 
-In this case, $U_2' > U_2$. Therefore, **GT is not an SPNE for this game**.
-
-### Case 4: $(R, R)$
-
-When player 2 does not deviate from GT:
-
-     $t$     $0$    $1$    $2$    $3$    $4$    ...
-  --------- ------ ------ ------ ------ ------ -----
-   $a_1^t$   R(B)   R(B)   R(B)   R(B)   R(B)   ...
-   $a_2^t$   R(B)   R(B)   R(B)   R(B)   R(B)   ...
-
-Thus,
-
-$$
-U_2 = 0
-$$
-
-When player 2 deviates from GT:
-
-     $t$     $0$    $1$    $2$    $3$   $4$   ...
-  --------- ------ ------ ------ ----- ----- -----
-   $a_1^t$   R(B)   R(B)    D      D     D    ...
-   $a_2^t$   R(B)    D     R(B)    D     D    ...
-
-Thus,
-
-\begin{align*}
-U_2' &= (1 - \epsilon_2) (B - \epsilon_2 B) \\
-     &= (1 - \epsilon_2)^2\:B
-\end{align*}
-
-In this case, $U_2' > U_2$, which makes this the second case that demonstrates
-GT is not an SPNE for this game.
+We see that $U_2' > U_2$. Therefore, **GT is not an SPNE for this game**.
 
 Pavlov
 ------
@@ -680,3 +600,15 @@ that should arise under more general conditions. In particular, having (1) a
 network with more users and larger peer sets peer user, as well as (2) longer
 peer-to-peer histories (rather than just single-round lookbehinds), should
 result in interesting peer dynamics that are not illustrated in this analysis.
+
+BACKUP
+------
+
+Now we can write $d_{ij}^{t+1}$ in terms of values from round $t$.
+
+$$
+d_{ij}^{t+1} = \frac{b_{ij}^{t}\:+\:
+                  \delta_{a_i^t R}\ S_i(d_{ij}^t\,,\,\mathbf{d}_i^{-j,t})\ B}
+               {b_{ji}^t\:+\:\delta_{a_j^t R}\ S_j(d_{ji}^t\,,\,\mathbf{d}_j^{-i,t})
+                 \ B\:+\:1}
+$$

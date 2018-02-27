@@ -7,6 +7,7 @@ header-includes:
     - \usepackage{amsmath}
     - \usepackage{multirow,array}
     - \usepackage{float}
+    - \usepackage{booktabs}
     - \restylefloat{table}
     - \DeclarePairedDelimiter\abs{\lvert}{\rvert}
     - \newcommand{\Network}{\ensuremath{\mathcal{N}}}
@@ -41,9 +42,8 @@ resources[^resource]. In this work, we primarily focus on Bitswap from a
 game-theoretic perspective.
 
 [^resource]: In reality, peer homogeneity limits this process to some extent;
-    however, to simplify this initial analysis, we assume all peers have an
-    equal capacity for sharing data.
-    
+    however, to simplify this analysis, we assume all peers have at least enough
+    resources to share data at the desired rate.
 
 System Model
 ============
@@ -95,8 +95,8 @@ $$
 d_{ji}^t = \frac{b_{ji}^{t-1}}{b_{ij}^{t-1}\:+\:1}
 $$
 
-$d_{ji}^t$ can be thought of as peer $i$'s reputation in the eyes of user $j$.
-This reputation is then considered by user $j$'s *reputation function*
+$d_{ji}^t$ can be thought of as peer $i$'s reputation from the perspective of
+user $j$. This reputation is then considered by user $j$'s *reputation function*
 $S_j(d_{ji}^t, \mathbf{d}_j^{-i,t}) \in \{0, 1\}$, where
 $\mathbf{d}_j^{-i,t} = (d_{jk}^t \mid \forall k \in \Nbhd{j}, k \neq i)$ is the
 vector of debt ratios for all of user $j$'s peers in round $t$ *excluding* peer
@@ -307,6 +307,8 @@ follow:
    $a_1^t$    D     D     D     D     D    ...
    $a_2^t$    D     D     D     D     D    ...
 
+Table: Initial condition $(D, D)$, both players play TFT
+
 Since neither player deviates from TFT, they both continually play their
 opponent's previous strategy -- the initial state is $(D, D)$, so each player
 repeatedly plays $D$ in this instance.
@@ -325,6 +327,8 @@ $t=1$. The resulting action sequence is then:
   --------- ----- ------ ------ ------ ------ -----
    $a_1^t$    D     D     R(0)    D     R(0)   ...
    $a_2^t$    D    R(0)    D     R(0)    D     ...
+
+Table: Initial condition $(D, D)$, player 2 deviates from TFT for 1 round
 
 In this case, player 2 deviates from TFT for a single round and plays $R$ at
 $t=1$ rather than $D$, then goes back to playing TFT for all subsequent rounds.
@@ -363,6 +367,8 @@ When player 2 doesn't deviate from TFT:
    $a_1^t$    D     R(B)    D     R(B)    D     ...
    $a_2^t$   R(B)    D     R(B)    D     R(B)   ...
 
+Table: Initial condition $(D, R)$, both players play TFT
+
 We can calculate player 2's discounted average payoff in this second case,
 $U_2'$. Note that we consider payoffs starting at $t=1$, not $t=0$ -- this is
 because we're calculating the payoff that player 2 would perceive if they
@@ -386,6 +392,8 @@ When player 2 does deviate from TFT:
    $a_1^t$    D     R(B)   R(0)   R(B)   R(0)   ...
    $a_2^t$   R(B)   R(0)   R(B)   R(0)   R(B)   ...
 
+Table: Initial condition $(D, R)$, player 2 deviates from TFT for 1 round
+
 Player 1 defects at $t=0$, so when player 2 reciprocates at $t=1$ they provide
 no data to player 1. However, player 2 provided $B$ bits at $t=0$, so when
 player 1 plays $R$ at $t=1$ they provide $B$ bits in return. Then at $t=2$,
@@ -408,6 +416,8 @@ When player 2 doesn't deviate from TFT:
    $a_1^t$   R(B)    D     R(B)    D     R(B)   ...
    $a_2^t$    D     R(B)    D     R(B)    D     ...
 
+Table: Initial condition $(R, D)$, both players play TFT
+
 Thus,
 
 \begin{align*}
@@ -421,6 +431,8 @@ When player 2 does deviate from TFT:
   --------- ------ ----- ----- ----- ----- -----
    $a_1^t$   R(B)    D     D     D     D    ...
    $a_2^t$    D      D     D     D     D    ...
+
+Table: Initial condition $(R, D)$, player 2 deviates from TFT for 1 round
 
 \begin{align*}
 U_2' &= (1 - \epsilon_2) (0 - \epsilon_2 0 + \epsilon_2^2 0 - \ldots) \\
@@ -438,6 +450,8 @@ When player 2 doesn't deviate from TFT:
    $a_1^t$   R(B)   R(B)   R(B)   R(B)   R(B)   ...
    $a_2^t$   R(B)   R(B)   R(B)   R(B)   R(B)   ...
 
+Table: Initial condition $(R, R)$, both players play TFT
+
 Thus,
 
 \begin{align*}
@@ -451,6 +465,8 @@ When player 2 does deviate from TFT:
   --------- ------ ------ ------ ------ ------ -----
    $a_1^t$   R(B)   R(B)    D     R(B)    D     ...
    $a_2^t$   R(B)    D     R(B)    D     R(B)   ...
+
+Table: Initial condition $(R, R)$, player 2 deviates from TFT for 1 round
 
 Thus,
 

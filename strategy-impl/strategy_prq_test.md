@@ -13,10 +13,10 @@ import (
     "testing"
 
 	"github.com/ipfs/go-ipfs/exchange/bitswap/wantlist"
-	"gx/ipfs/QmeDA8gNhvRTsbrjEieay5wezupJDiky8xvCzDABbsGzmp/go-testutil"
-	u "gx/ipfs/QmPsAfmDBnZN3kZGSuNwvCNDZiHneERSKmRcFyG3UkvcT3/go-ipfs-util"
-	peer "gx/ipfs/QmWNY7dV54ZDYmTA1ykVdwNCqC11mpU4zSUp6XDpLTH9eG/go-libp2p-peer"
-	cid "gx/ipfs/QmeSrf6pzut73u6zLQkRFQ3ygt3k6XFT2kjdYP8Tnkwwyg/go-cid"
+	"github.com/libp2p/go-testutil"
+	u "github.com/ipfs/go-ipfs-util"
+	cid "github.com/ipfs/go-cid"
+	peer "github.com/libp2p/go-libp2p-peer"
 )
 ```
 
@@ -236,7 +236,7 @@ func TestSPRQPushPop5Peers(t *testing.T) {
 		numServes += 1
 		expectedAllocations[received.Target] -= blockSize
 		if prq.allocationForPeer(received.Target) != expectedAllocations[received.Target] {
-		    t.Fatalf("Peer %d: Expected allocation of %d, got %d", received.Target.String(),
+		    t.Fatalf("Peer %s: Expected allocation of %d, got %d", received.Target.String(),
     		    expectedAllocations[received.Target], prq.allocationForPeer(received.Target))
 		}
 	}
@@ -309,7 +309,7 @@ func testStrategy(t *testing.T, strategy Strategy) {
 		allocations[received.Target] -= blockSize
 		// check that allocation is as expected
 		if prq.allocationForPeer(received.Target) != allocations[received.Target] {
-		    t.Fatalf("Peer %d: Expected allocation of %d, got %d", received.Target,
+		    t.Fatalf("Peer %s: Expected allocation of %d, got %d", received.Target,
     		    allocations[received.Target], prq.allocationForPeer(received.Target))
 		}
 	}

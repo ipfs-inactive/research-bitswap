@@ -7,8 +7,8 @@ package decision
 import (
     "testing"
 
-	peer "gx/ipfs/QmWNY7dV54ZDYmTA1ykVdwNCqC11mpU4zSUp6XDpLTH9eG/go-libp2p-peer"
-	testutil "gx/ipfs/QmeDA8gNhvRTsbrjEieay5wezupJDiky8xvCzDABbsGzmp/go-testutil"
+	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-testutil"
 )
 ```
 

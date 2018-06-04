@@ -137,7 +137,7 @@ func (rrq *RRQueue) Head() *RRPeer {
 
 ```{.go .lib}
 func (rrq *RRQueue) Shift() {
-    rrq.allocations[0], rrq.allocations[len(rrq.allocations) - 1] = rrq.allocations[len(rrq.allocations) - 1], rrq.allocations[0]
+    rrq.allocations = append(rrq.allocations[1:], rrq.allocations[0])
 }
 ```
 

@@ -14,6 +14,13 @@ import (
 Types and Constructors
 ----------------------
 
+```{.go .lib}
+type RRQConfig struct {
+	RoundBurst  int
+	Strategy    Strategy
+}
+```
+
 An `RRPeer` represents the round-robin allocation for a single peer in a given
 round. It is made up of the following values:
 
@@ -35,9 +42,7 @@ type RRPeer struct {
 An `RRQueue` represents a round-robin queue and is made up of the following
 values and data structures:
 
--   `peerBurst` is a parameter that controls the amount of data a peer is sent
-    consecutively within a single round-robin round. Units: **TODO**
--   `round` is a parameter that controls the total amount of data that is
+-   `roundBurst` is a parameter that controls the total amount of data that is
     allocated to peers in a single round-robin round. Units: **TODO**
 -   `strategy` is the Bitswap strategy function used to weight peers at the
     start of a round-robin round.
@@ -46,7 +51,7 @@ values and data structures:
 -   `allocations` is a list of round-robin peers (`RRPeer`s) which maintain the
     state of each peer throughout a round-robin round. This is a list of
     `RRPeer`'s rather than a map `peerID` to corresponding allocation because we
-r   treat this as a queue of peers that we want to maintain the order of.
+    treat this as a queue of peers that we want to maintain the order of.
 
 ```{.go .lib}
 // Round Robin Queue
@@ -57,20 +62,10 @@ type RRQueue struct {
 	allocations []*RRPeer
 }
 
-func newRRQueue(s Strategy) *RRQueue {
+func newRRQueue(cfg *RRQConfig) *RRQueue {
 	return &RRQueue{
-		roundBurst:  1000,
-		strategy:    s,
-		weights:     make(map[peer.ID]float64),
-		allocations: []*RRPeer{},
-	}
-}
-
-// TODO: accept config object
-func newRRQueueCustom(s Strategy, burst int) *RRQueue {
-	return &RRQueue{
-		roundBurst:  burst,
-		strategy:    s,
+		roundBurst:  cfg.RoundBurst,
+		strategy:    cfg.Strategy,
 		weights:     make(map[peer.ID]float64),
 		allocations: []*RRPeer{},
 	}
@@ -89,7 +84,7 @@ func (rrq *RRQueue) InitRound() {
 	for _, weight := range rrq.weights {
 		totalWeight += weight
 	}
-	
+
     for id, weight := range rrq.weights {
     	allocation := int((weight / totalWeight) * float64(rrq.roundBurst))
     	if allocation <= 0 {
@@ -174,14 +169,18 @@ in the round-robin queue.
 type Strategy func(r *Receipt) float64
 
 // simple weighting function based on peer's ledger Value
-func Simple(r *Receipt) float64 {
+func Identity(r *Receipt) float64 {
 	if r.Value <= 0 {
 		return 0
 	}
 	return r.Value
 }
 
-func Exp(r *Receipt) float64 {
-    return 100 / (1 + math.Exp(2 - r.Value))
+func Sigmoid(r *Receipt) float64 {
+    return 1 / (1 + math.Exp(2 - r.Value))
+}
+
+func Tanh(r *Receipt) float64 {
+    return math.Tanh(r.Value)
 }
 ```

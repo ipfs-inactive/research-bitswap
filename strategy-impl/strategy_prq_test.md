@@ -29,7 +29,7 @@ tests and is not specific to the round-robin functionality.
 
 ```{.go .lib}
 func TestSPRQPushPopLegacy(t *testing.T) {
-	prq := newSPRQ(Simple)
+	prq := newSPRQ(&RRQConfig{RoundBurst: 5000, Strategy: Identity})
 	partner := testutil.RandPeerIDFatal(t)
 	alphabet := strings.Split("abcdefghijklmnopqrstuvwxyz", "")
 	vowels := strings.Split("aeiou", "")
@@ -93,7 +93,7 @@ allocation limited has been reached.
 ```{.go .lib}
 func TestSPRQPushPopServeAll(t *testing.T) {
     roundBurst := 100
-	prq := newSPRQCustom(Simple, roundBurst)
+	prq := newSPRQ(&RRQConfig{RoundBurst: roundBurst, Strategy: Identity})
 	partner := testutil.RandPeerIDFatal(t)
 	alphabet := strings.Split("abcdefghijklmnopqrstuvwxyz", "")
 
@@ -144,7 +144,7 @@ expected.
 
 ```{.go .lib}
 func TestSPRQPushPop1Round(t *testing.T) {
-	prq := newSPRQCustom(Simple, 100)
+	prq := newSPRQ(&RRQConfig{RoundBurst: 100, Strategy: Identity})
 	partner := testutil.RandPeerIDFatal(t)
 	alphabet := strings.Split("abcdefghijklmnopqrstuvwxyz", "")
 	// the first 20 letters should be served by the end
@@ -208,7 +208,7 @@ ledger values.
 ```{.go .lib}
 func TestSPRQPushPop5Peers(t *testing.T) {
     roundBurst := 150
-	prq := newSPRQCustom(Simple, roundBurst)
+	prq := newSPRQ(&RRQConfig{RoundBurst: roundBurst, Strategy: Identity})
 	partners := make([]peer.ID, 5)
 	expectedAllocations := make(map[peer.ID]int)
 	for i, _ := range partners {
@@ -249,11 +249,15 @@ func TestSPRQPushPop5Peers(t *testing.T) {
 
 ```{.go .lib}
 func TestSPRQSimpleStrategy(t *testing.T) {
-    testStrategy(t, Simple)
+    testStrategy(t, Identity)
 }
 
-func TestSPRQExpStrategy(t *testing.T) {
-    testStrategy(t, Exp)
+func TestSPRQSigmoidStrategy(t *testing.T) {
+    testStrategy(t, Sigmoid)
+}
+
+func TestSPRQTanhStrategy(t *testing.T) {
+    testStrategy(t, Tanh)
 }
 ```
 
@@ -276,7 +280,7 @@ func testStrategy(t *testing.T, strategy Strategy) {
     }
 
     roundBurst := int(totalWeight)
-	prq := newSPRQCustom(strategy, roundBurst)
+	prq := newSPRQ(&RRQConfig{RoundBurst: roundBurst, Strategy: strategy})
 	// calculate expected allocation for each peer and add blocks to queues
 	for i, _ := range partners {
     	expectedAllocations[partners[i]] = int(strategy(ledgers[i]) / totalWeight * float64(roundBurst))

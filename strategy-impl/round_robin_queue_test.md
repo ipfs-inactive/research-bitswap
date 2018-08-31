@@ -28,7 +28,7 @@ Create a new RRQ, and an array to stored the expected allocations for each peer.
 
 ```{.go .lib}
     roundBurst := 50
-    rrq := newRRQueueCustom(Simple, roundBurst)
+    rrq := newRRQueue(&RRQConfig{RoundBurst: roundBurst, Strategy: Identity})
     numPeers := 5
 ```
 
@@ -96,7 +96,7 @@ containing all integers in the range `[0, numPeers - 1]`).
 ```{.go .lib}
 func TestRRQWeightAllocationsVarying(t *testing.T) {
     roundBurst := 50
-    rrq := newRRQueueCustom(Simple, roundBurst)
+    rrq := newRRQueue(&RRQConfig{RoundBurst: roundBurst, Strategy: Identity})
     numPeers := 5
     expected := make(map[peer.ID]int)
 
@@ -139,7 +139,7 @@ predominant function a
 ```{.go .lib}
 func TestRRQPopHeadShift(t *testing.T) {
     roundBurst := 50
-    rrq := newRRQueueCustom(Simple, roundBurst)
+    rrq := newRRQueue(&RRQConfig{RoundBurst: roundBurst, Strategy: Identity})
     numPeers := 5
 
     for i := 0; i < numPeers; i++ {

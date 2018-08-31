@@ -20,21 +20,12 @@ Type and Constructor
 --------------------
 
 ```{.go .lib}
-func newSPRQ(strategy Strategy) *sprq {
+func newSPRQ(rrqCfg *RRQConfig) *sprq {
 	return &sprq{
 		taskMap:  make(map[string]*peerRequestTask),
 		partners: make(map[peer.ID]*activePartner),
 		pQueue:   pq.New(partnerCompare),
-		rrq:      newRRQueue(strategy),
-	}
-}
-
-func newSPRQCustom(strategy Strategy, burst int) *sprq {
-	return &sprq{
-		taskMap:  make(map[string]*peerRequestTask),
-		partners: make(map[peer.ID]*activePartner),
-		pQueue:   pq.New(partnerCompare),
-		rrq:      newRRQueueCustom(strategy, burst),
+		rrq:      newRRQueue(rrqCfg),
 	}
 }
 
@@ -48,7 +39,6 @@ type sprq struct {
 	partners map[peer.ID]*activePartner
 	rrq      *RRQueue
 }
-
 ```
 
 Push
@@ -63,9 +53,9 @@ func (tl *sprq) Push(entry *wantlist.Entry, receipt *Receipt) {
 	to := peer.ID(receipt.Peer)
 	tl.lock.Lock()
 	defer tl.lock.Unlock()
-	
+
 	partner, ok := tl.partners[to]
-	
+
 	if !ok {
 		partner = newActivePartner()
 		tl.pQueue.Push(partner)
